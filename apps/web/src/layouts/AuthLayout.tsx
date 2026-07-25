@@ -16,10 +16,10 @@ export function AuthLayout() {
   if (user) return <Navigate to="/dashboard" replace />;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-dark-950 px-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <BrandLogo size="login" />
+        <div className="flex justify-center mb-8">
+          <BrandLogo size="lg" />
         </div>
         <Outlet />
       </div>
