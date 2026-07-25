@@ -1,0 +1,62 @@
+import { Request, Response, NextFunction } from "express";
+import { leadsService } from "../services/leads.service";
+import { getOrganizationId } from "../utils/helpers";
+
+export const leadsController = {
+  async list(req: Request, res: Response, next: NextFunction) {
+    try {
+      const orgId = getOrganizationId(req);
+      const { page = "1", limit = "20", search, sort_by, sort_order } = req.query;
+      const result = await leadsService.list(orgId, {
+        page: Number(page),
+        limit: Number(limit),
+        search: search as string,
+        sortBy: sort_by as string,
+        sortOrder: sort_order as "asc" | "desc",
+      });
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const orgId = getOrganizationId(req);
+      const lead = await leadsService.getById(req.params.id, orgId);
+      res.json({ data: lead });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async create(req: Request, res: Response, next: NextFunction) {
+    try {
+      const orgId = getOrganizationId(req);
+      const lead = await leadsService.create(req.body, orgId);
+      res.status(201).json({ data: lead, message: "Lead created" });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const orgId = getOrganizationId(req);
+      const lead = await leadsService.update(req.params.id, req.body, orgId);
+      res.json({ data: lead, message: "Lead updated" });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async remove(req: Request, res: Response, next: NextFunction) {
+    try {
+      const orgId = getOrganizationId(req);
+      await leadsService.remove(req.params.id, orgId);
+      res.json({ message: "Lead deleted" });
+    } catch (err) {
+      next(err);
+    }
+  },
+};

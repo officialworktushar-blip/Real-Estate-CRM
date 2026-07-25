@@ -1,0 +1,26 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import { config } from "./config";
+import { errorHandler } from "./middleware/errorHandler";
+import { rateLimiter } from "./middleware/rateLimiter";
+import routes from "./routes";
+
+const app = express();
+
+app.use(helmet());
+app.use(cors({ origin: config.corsOrigin, credentials: true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(morgan("dev"));
+app.use(rateLimiter);
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.use("/api", routes);
+
+app.use(errorHandler);
+
+export default app;

@@ -1,0 +1,28 @@
+{
+  "name": "oryntal-estate-crm",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "turbo dev --filter=web",
+    "dev:backend": "turbo dev --filter=backend",
+    "build": "turbo build",
+    "build:web": "turbo build --filter=web",
+    "build:backend": "turbo build --filter=backend",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean",
+    "db:migrate": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:seed": "supabase db seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "npm@10.9.0"
+}
