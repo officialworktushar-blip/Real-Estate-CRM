@@ -1,5 +1,6 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { BrandLogo } from "@/components/common/BrandLogo";
 
 export function AuthLayout() {
   const { user, isLoading } = useAuth();
@@ -18,8 +19,7 @@ export function AuthLayout() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Oryntal Estate</h1>
-          <p className="text-sm text-gray-500 mt-1">Real Estate CRM</p>
+          <BrandLogo size="login" />
         </div>
         <Outlet />
       </div>

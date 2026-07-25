@@ -3,6 +3,7 @@ import { LayoutDashboard, Users, Home, Handshake, Calendar, BarChart3, Settings,
 import { useAppStore } from "@/stores/appStore";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/utils/helpers";
+import { BrandLogo } from "./BrandLogo";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", end: true },
@@ -33,7 +34,10 @@ export function Sidebar() {
       )}
     >
       <div className="flex items-center justify-between px-4 h-16 border-b border-gray-800">
-        {sidebarOpen && <span className="text-lg font-bold tracking-tight">Oryntal Estate</span>}
+        <BrandLogo
+          size={sidebarOpen ? "sidebar" : "sidebar-collapsed"}
+          darkMode="dark"
+        />
         <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-gray-800">
           <ChevronLeft className={cn("h-5 w-5 transition-transform", !sidebarOpen && "rotate-180")} />
         </button>
