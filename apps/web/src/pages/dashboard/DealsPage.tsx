@@ -11,17 +11,40 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  CurrencyIcon,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
-import { formatCurrency, formatDate } from "@/utils/helpers";
+import { formatDate } from "@/utils/helpers";
+import { formatAmount, type CurrencyCode } from "@/utils/currency";
+import { useCurrencyStore } from "@/stores/currencyStore";
 
 type DealStage = "lead" | "proposal" | "negotiation" | "due_diligence" | "closing" | "closed_won";
 type DealPriority = "high" | "medium" | "low";
 
-const dummyDeals = [
+const stages: DealStage[] = ["lead", "proposal", "negotiation", "due_diligence", "closing", "closed_won"];
+
+const stageConfig: Record<DealStage, { label: string; color: string; bgColor: string; textColor: string }> = {
+  lead: { label: "Lead", color: "border-dark-500", bgColor: "bg-dark-600", textColor: "text-dark-300" },
+  proposal: { label: "Proposal", color: "border-blue-500", bgColor: "bg-blue-500", textColor: "text-blue-400" },
+  negotiation: { label: "Negotiation", color: "border-amber-500", bgColor: "bg-amber-500", textColor: "text-amber-400" },
+  due_diligence: { label: "Due Diligence", color: "border-purple-500", bgColor: "bg-purple-500", textColor: "text-purple-400" },
+  closing: { label: "Closing", color: "border-emerald-500", bgColor: "bg-emerald-500", textColor: "text-emerald-400" },
+  closed_won: { label: "Closed Won", color: "border-gold-500", bgColor: "bg-gold-500", textColor: "text-gold-400" },
+};
+
+const priorityConfig: Record<DealPriority, { label: string; variant: "danger" | "warning" | "default"; icon: React.ReactNode }> = {
+  high: { label: "High", variant: "danger", icon: <AlertCircle className="h-3 w-3" /> },
+  medium: { label: "Medium", variant: "warning", icon: <Clock className="h-3 w-3" /> },
+  low: { label: "Low", variant: "default", icon: <CheckCircle2 className="h-3 w-3" /> },
+};
+
+const initialDeals = [
   { id: "1", title: "1234 Pacific Coast Hwy", stage: "negotiation" as DealStage, value: 2450000, commission: 73500, client: "Sarah Mitchell", expectedClose: "2026-08-15", priority: "high" as DealPriority },
   { id: "2", title: "567 Grand Ave #1201", stage: "proposal" as DealStage, value: 875000, commission: 26250, client: "James Rodriguez", expectedClose: "2026-08-30", priority: "medium" as DealPriority },
   { id: "3", title: "890 Oak Lane", stage: "closing" as DealStage, value: 1120000, commission: 33600, client: "Emily Chen", expectedClose: "2026-07-28", priority: "high" as DealPriority },
@@ -34,28 +57,29 @@ const dummyDeals = [
   { id: "10", title: "456 Vermont Ave #305", stage: "proposal" as DealStage, value: 320000, commission: 9600, client: "Rachel Taylor", expectedClose: "2026-09-10", priority: "low" as DealPriority },
 ];
 
-const stageConfig: Record<DealStage, { label: string; color: string; bgColor: string }> = {
-  lead: { label: "Lead", color: "text-dark-300", bgColor: "bg-dark-600" },
-  proposal: { label: "Proposal", color: "text-blue-400", bgColor: "bg-blue-500" },
-  negotiation: { label: "Negotiation", color: "text-amber-400", bgColor: "bg-amber-500" },
-  due_diligence: { label: "Due Diligence", color: "text-purple-400", bgColor: "bg-purple-500" },
-  closing: { label: "Closing", color: "text-emerald-400", bgColor: "bg-emerald-500" },
-  closed_won: { label: "Closed Won", color: "text-gold-400", bgColor: "bg-gold-500" },
-};
-
-const stages: DealStage[] = ["lead", "proposal", "negotiation", "due_diligence", "closing", "closed_won"];
-
-const priorityConfig: Record<DealPriority, { label: string; variant: "danger" | "warning" | "default"; icon: React.ReactNode }> = {
-  high: { label: "High", variant: "danger", icon: <AlertCircle className="h-3 w-3" /> },
-  medium: { label: "Medium", variant: "warning", icon: <Clock className="h-3 w-3" /> },
-  low: { label: "Low", variant: "default", icon: <CheckCircle2 className="h-3 w-3" /> },
-};
-
 export function DealsPage() {
+  const { currency, toggleCurrency } = useCurrencyStore();
+  const [deals, setDeals] = useState(initialDeals);
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<DealStage | "all">("all");
 
-  const filtered = dummyDeals.filter((d) => {
+  const moveDeal = (dealId: string, direction: "forward" | "backward") => {
+    setDeals((prev) =>
+      prev.map((d) => {
+        if (d.id !== dealId) return d;
+        const idx = stages.indexOf(d.stage);
+        if (direction === "forward" && idx < stages.length - 1) {
+          return { ...d, stage: stages[idx + 1] };
+        }
+        if (direction === "backward" && idx > 0) {
+          return { ...d, stage: stages[idx - 1] };
+        }
+        return d;
+      })
+    );
+  };
+
+  const filtered = deals.filter((d) => {
     const matchSearch =
       d.title.toLowerCase().includes(search.toLowerCase()) ||
       d.client.toLowerCase().includes(search.toLowerCase());
@@ -71,12 +95,21 @@ export function DealsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-dark-100">Deals</h1>
-          <p className="text-sm text-dark-400 mt-1">{filtered.length} deals · {formatCurrency(totalValue)} pipeline</p>
+          <p className="text-sm text-dark-400 mt-1">{filtered.length} deals · {formatAmount(totalValue, currency)} pipeline</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Deal
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleCurrency}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-800 border border-dark-700 text-sm text-dark-200 hover:border-dark-600 transition-colors"
+          >
+            <DollarSign className="h-4 w-4" />
+            {currency === "USD" ? "$ USD" : "₹ INR"}
+          </button>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Deal
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -88,7 +121,7 @@ export function DealsPage() {
               </div>
               <div>
                 <p className="text-xs text-dark-400">Pipeline Value</p>
-                <p className="text-lg font-bold text-dark-100">{formatCurrency(totalValue)}</p>
+                <p className="text-lg font-bold text-dark-100">{formatAmount(totalValue, currency)}</p>
               </div>
             </div>
           </CardContent>
@@ -101,7 +134,7 @@ export function DealsPage() {
               </div>
               <div>
                 <p className="text-xs text-dark-400">Expected Commission</p>
-                <p className="text-lg font-bold text-gold-400">{formatCurrency(totalCommission)}</p>
+                <p className="text-lg font-bold text-gold-400">{formatAmount(totalCommission, currency)}</p>
               </div>
             </div>
           </CardContent>
@@ -147,38 +180,72 @@ export function DealsPage() {
         {stages.map((stage) => {
           const stageDeals = filtered.filter((d) => d.stage === stage);
           const stageValue = stageDeals.reduce((sum, d) => sum + d.value, 0);
+          const stageIndex = stages.indexOf(stage);
           return (
-            <div key={stage} className="min-w-[220px] space-y-3">
+            <div key={stage} className="min-w-[230px] space-y-3">
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <div className={`h-2 w-2 rounded-full ${stageConfig[stage].bgColor}`} />
                   <h4 className="text-sm font-semibold text-dark-200">{stageConfig[stage].label}</h4>
                 </div>
-                <span className="text-xs text-dark-500">{stageDeals.length} · {formatCurrency(stageValue)}</span>
+                <span className="text-xs text-dark-500">{stageDeals.length} · {formatAmount(stageValue, currency)}</span>
               </div>
               <div className="space-y-2 min-h-[100px]">
-                {stageDeals.map((deal) => (
-                  <div key={deal.id} className="bg-dark-800 border border-dark-700 rounded-lg p-3 hover:border-dark-600 transition-colors cursor-pointer">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-dark-100 truncate">{deal.title}</p>
-                      <GripVertical className="h-4 w-4 text-dark-600 shrink-0" />
-                    </div>
-                    <p className="text-lg font-bold text-gold-400 mt-1">{formatCurrency(deal.value)}</p>
-                    <div className="flex items-center gap-1 mt-2">
-                      <User className="h-3 w-3 text-dark-500" />
-                      <span className="text-xs text-dark-400 truncate">{deal.client}</span>
-                    </div>
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-dark-700/50">
-                      <div className="flex items-center gap-1">
+                {stageDeals.map((deal) => {
+                  const canGoForward = stageIndex < stages.length - 1;
+                  const canGoBackward = stageIndex > 0;
+                  return (
+                    <div
+                      key={deal.id}
+                      className={`bg-dark-800 border border-dark-700 border-l-2 ${stageConfig[deal.stage].color} rounded-lg p-3 hover:border-dark-600 transition-colors`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-dark-100 truncate">{deal.title}</p>
+                        <Badge variant={priorityConfig[deal.priority].variant}>
+                          <span className="flex items-center gap-1">{priorityConfig[deal.priority].icon}{priorityConfig[deal.priority].label}</span>
+                        </Badge>
+                      </div>
+
+                      <div className="mt-2 flex items-baseline gap-1">
+                        <span className="text-lg font-bold text-gold-400">{formatAmount(deal.value, currency)}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 mt-2">
+                        <User className="h-3 w-3 text-dark-500" />
+                        <span className="text-xs text-dark-400 truncate">{deal.client}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 mt-1">
                         <Calendar className="h-3 w-3 text-dark-500" />
                         <span className="text-[10px] text-dark-400">{formatDate(deal.expectedClose)}</span>
                       </div>
-                      <Badge variant={priorityConfig[deal.priority].variant}>
-                        <span className="flex items-center gap-1">{priorityConfig[deal.priority].icon}{priorityConfig[deal.priority].label}</span>
-                      </Badge>
+
+                      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-dark-700/50">
+                        <button
+                          onClick={() => canGoBackward && moveDeal(deal.id, "backward")}
+                          disabled={!canGoBackward}
+                          className="flex items-center gap-0.5 px-2 py-1 rounded text-[10px] font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <ChevronLeft className="h-3 w-3" />
+                          Back
+                        </button>
+                        <div className="flex-1" />
+                        <button
+                          onClick={() => canGoForward && moveDeal(deal.id, "forward")}
+                          disabled={!canGoForward}
+                          className={`flex items-center gap-0.5 px-2 py-1 rounded text-[10px] font-medium transition-colors disabled:opacity-30 disabled:pointer-events-none ${
+                            canGoForward
+                              ? stage === "closed_won" ? "text-dark-400 hover:text-dark-200 hover:bg-dark-700" : "text-gold-400 hover:text-gold-300 bg-gold-500/10 hover:bg-gold-500/20"
+                              : "text-dark-400"
+                          }`}
+                        >
+                          {canGoForward && stage !== "closed_won" ? "Advance" : "Done"}
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {stageDeals.length === 0 && (
                   <div className="flex items-center justify-center h-24 text-xs text-dark-500 border border-dashed border-dark-700 rounded-lg">
                     No deals

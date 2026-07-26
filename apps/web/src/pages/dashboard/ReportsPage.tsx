@@ -6,24 +6,16 @@ import {
   TrendingUp,
   TrendingDown,
   BarChart3,
-  PieChart,
   ArrowUpRight,
   ArrowDownRight,
-  Calendar,
   Download,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { StatsCardSkeleton } from "@/components/common/Skeleton";
-import { formatCurrency } from "@/utils/helpers";
-
-const summaryStats = [
-  { title: "Total Revenue", value: formatCurrency(1284500), change: "+18.2% vs last quarter", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
-  { title: "Total Leads", value: "248", change: "+12.5% vs last quarter", changeType: "positive" as const, icon: <Users className="h-6 w-6" /> },
-  { title: "Properties Sold", value: "34", change: "+8.3% vs last quarter", changeType: "positive" as const, icon: <Home className="h-6 w-6" /> },
-  { title: "Conversion Rate", value: "24.8%", change: "+2.1% vs last quarter", changeType: "positive" as const, icon: <TrendingUp className="h-6 w-6" /> },
-];
+import { formatAmount } from "@/utils/currency";
+import { useCurrencyStore } from "@/stores/currencyStore";
 
 const monthlyRevenue = [
   { month: "Jan", value: 145000 },
@@ -61,8 +53,16 @@ const recentActivity = [
 const maxRevenue = Math.max(...monthlyRevenue.map((m) => m.value));
 
 export function ReportsPage() {
+  const { currency, toggleCurrency } = useCurrencyStore();
   const [isLoading] = useState(false);
   const [period, setPeriod] = useState<"monthly" | "quarterly" | "yearly">("monthly");
+
+  const summaryStats = [
+    { title: "Total Revenue", value: formatAmount(1284500, currency), change: "+18.2% vs last quarter", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
+    { title: "Total Leads", value: "248", change: "+12.5% vs last quarter", changeType: "positive" as const, icon: <Users className="h-6 w-6" /> },
+    { title: "Properties Sold", value: "34", change: "+8.3% vs last quarter", changeType: "positive" as const, icon: <Home className="h-6 w-6" /> },
+    { title: "Conversion Rate", value: "24.8%", change: "+2.1% vs last quarter", changeType: "positive" as const, icon: <TrendingUp className="h-6 w-6" /> },
+  ];
 
   return (
     <div className="space-y-6">
@@ -81,6 +81,13 @@ export function ReportsPage() {
             <option value="quarterly">Quarterly</option>
             <option value="yearly">Yearly</option>
           </select>
+          <button
+            onClick={toggleCurrency}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-800 border border-dark-700 text-sm text-dark-200 hover:border-dark-600 transition-colors"
+          >
+            <DollarSign className="h-4 w-4" />
+            {currency === "USD" ? "$ USD" : "₹ INR"}
+          </button>
           <Button variant="secondary">
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -112,7 +119,7 @@ export function ReportsPage() {
               <div className="flex items-end gap-2 h-48">
                 {monthlyRevenue.map((m) => (
                   <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[10px] text-dark-400">{formatCurrency(m.value)}</span>
+                    <span className="text-[10px] text-dark-400">{formatAmount(m.value, currency)}</span>
                     <div className="w-full bg-brand-500/20 rounded-t-md relative" style={{ height: `${(m.value / maxRevenue) * 140}px` }}>
                       <div className="absolute inset-0 bg-brand-500 rounded-t-md opacity-80 hover:opacity-100 transition-opacity" />
                     </div>
@@ -145,7 +152,7 @@ export function ReportsPage() {
                     <div className="text-right">
                       {activity.amount && (
                         <p className={`text-sm font-semibold ${activity.type === "positive" ? "text-emerald-400" : "text-red-400"}`}>
-                          {activity.type === "positive" ? "+" : "-"}{formatCurrency(activity.amount)}
+                          {activity.type === "positive" ? "+" : "-"}{formatAmount(activity.amount, currency)}
                         </p>
                       )}
                       <p className="text-[10px] text-dark-500">{activity.time}</p>
@@ -197,7 +204,7 @@ export function ReportsPage() {
                         <p className="text-xs text-dark-400">{agent.deals} deals</p>
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-gold-400">{formatCurrency(agent.revenue)}</span>
+                    <span className="text-sm font-semibold text-gold-400">{formatAmount(agent.revenue, currency)}</span>
                   </div>
                 ))}
               </div>
@@ -211,7 +218,7 @@ export function ReportsPage() {
             <CardContent className="space-y-4">
               {[
                 { label: "Avg Days to Close", value: "42 days", trend: "down", change: "-5 days" },
-                { label: "Avg Deal Size", value: formatCurrency(377794), trend: "up", change: "+8.2%" },
+                { label: "Avg Deal Size", value: formatAmount(377794, currency), trend: "up", change: "+8.2%" },
                 { label: "Client Satisfaction", value: "4.8/5.0", trend: "up", change: "+0.3" },
                 { label: "Repeat Client Rate", value: "32%", trend: "up", change: "+4%" },
                 { label: "Lead Response Time", value: "2.4 hours", trend: "down", change: "-0.8h" },

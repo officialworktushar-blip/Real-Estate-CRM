@@ -17,61 +17,64 @@ import { StatsCardSkeleton } from "@/components/common/Skeleton";
 import { Card, CardHeader, CardContent } from "@/components/common/Card";
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
-import { formatCurrency, formatDate } from "@/utils/helpers";
-
-const statsData = [
-  { title: "Total Leads", value: 248, change: "+12% this month", changeType: "positive" as const, icon: <Users className="h-6 w-6" /> },
-  { title: "Active Properties", value: 86, change: "+5% this month", changeType: "positive" as const, icon: <Home className="h-6 w-6" /> },
-  { title: "Open Deals", value: 34, change: "-2% this month", changeType: "negative" as const, icon: <Handshake className="h-6 w-6" /> },
-  { title: "Revenue", value: formatCurrency(1284500), change: "+18% this month", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
-];
-
-const recentLeads = [
-  { id: "1", name: "Sarah Mitchell", email: "sarah@email.com", source: "Website", status: "new", budget: 450000, created_at: "2026-07-25" },
-  { id: "2", name: "James Rodriguez", email: "james@email.com", source: "Referral", status: "qualified", budget: 720000, created_at: "2026-07-24" },
-  { id: "3", name: "Emily Chen", email: "emily@email.com", source: "Zillow", status: "contacted", budget: 380000, created_at: "2026-07-23" },
-  { id: "4", name: "Michael Brown", email: "michael@email.com", source: "Social Media", status: "new", budget: 550000, created_at: "2026-07-22" },
-  { id: "5", name: "Lisa Anderson", email: "lisa@email.com", source: "Open House", status: "negotiation", budget: 620000, created_at: "2026-07-21" },
-];
-
-const upcomingEvents = [
-  { id: "1", title: "Property Viewing - 123 Oak Ave", time: "10:00 AM", date: "Today", type: "viewing" },
-  { id: "2", title: "Client Meeting - Sarah Mitchell", time: "2:00 PM", date: "Today", type: "meeting" },
-  { id: "3", title: "Open House - 456 Pine St", time: "11:00 AM", date: "Tomorrow", type: "open_house" },
-  { id: "4", title: "Deal Closing - Rodriguez", time: "3:00 PM", date: "Jul 28", type: "closing" },
-];
-
-const pipelineStages = [
-  { stage: "Lead", count: 45, value: 18500000, color: "bg-dark-500" },
-  { stage: "Contacted", count: 32, value: 12800000, color: "bg-brand-500" },
-  { stage: "Qualified", count: 28, value: 9400000, color: "bg-blue-500" },
-  { stage: "Proposal", count: 18, value: 7200000, color: "bg-purple-500" },
-  { stage: "Negotiation", count: 12, value: 5100000, color: "bg-amber-500" },
-  { stage: "Closed", count: 8, value: 3400000, color: "bg-emerald-500" },
-];
-
-const statusColor = (s: string) => {
-  switch (s) {
-    case "new": return "info";
-    case "qualified": return "success";
-    case "contacted": return "warning";
-    case "negotiation": return "default";
-    default: return "default";
-  }
-};
-
-const eventTypeColor = (t: string) => {
-  switch (t) {
-    case "viewing": return "bg-brand-500/10 text-brand-400 border border-brand-500/20";
-    case "meeting": return "bg-gold-500/10 text-gold-400 border border-gold-500/20";
-    case "open_house": return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-    case "closing": return "bg-purple-500/10 text-purple-400 border border-purple-500/20";
-    default: return "bg-dark-600/50 text-dark-300 border border-dark-600";
-  }
-};
+import { formatDate } from "@/utils/helpers";
+import { formatAmount } from "@/utils/currency";
+import { useCurrencyStore } from "@/stores/currencyStore";
 
 export function DashboardPage() {
+  const { currency, toggleCurrency } = useCurrencyStore();
   const [isLoading] = useState(false);
+
+  const statsData = [
+    { title: "Total Leads", value: 248, change: "+12% this month", changeType: "positive" as const, icon: <Users className="h-6 w-6" /> },
+    { title: "Active Properties", value: 86, change: "+5% this month", changeType: "positive" as const, icon: <Home className="h-6 w-6" /> },
+    { title: "Open Deals", value: 34, change: "-2% this month", changeType: "negative" as const, icon: <Handshake className="h-6 w-6" /> },
+    { title: "Revenue", value: formatAmount(1284500, currency), change: "+18% this month", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
+  ];
+
+  const recentLeads = [
+    { id: "1", name: "Sarah Mitchell", email: "sarah@email.com", source: "Website", status: "new", budget: 450000, created_at: "2026-07-25" },
+    { id: "2", name: "James Rodriguez", email: "james@email.com", source: "Referral", status: "qualified", budget: 720000, created_at: "2026-07-24" },
+    { id: "3", name: "Emily Chen", email: "emily@email.com", source: "Zillow", status: "contacted", budget: 380000, created_at: "2026-07-23" },
+    { id: "4", name: "Michael Brown", email: "michael@email.com", source: "Social Media", status: "new", budget: 550000, created_at: "2026-07-22" },
+    { id: "5", name: "Lisa Anderson", email: "lisa@email.com", source: "Open House", status: "negotiation", budget: 620000, created_at: "2026-07-21" },
+  ];
+
+  const upcomingEvents = [
+    { id: "1", title: "Property Viewing - 123 Oak Ave", time: "10:00 AM", date: "Today", type: "viewing" },
+    { id: "2", title: "Client Meeting - Sarah Mitchell", time: "2:00 PM", date: "Today", type: "meeting" },
+    { id: "3", title: "Open House - 456 Pine St", time: "11:00 AM", date: "Tomorrow", type: "open_house" },
+    { id: "4", title: "Deal Closing - Rodriguez", time: "3:00 PM", date: "Jul 28", type: "closing" },
+  ];
+
+  const pipelineStages = [
+    { stage: "Lead", count: 45, value: 18500000, color: "bg-dark-500" },
+    { stage: "Contacted", count: 32, value: 12800000, color: "bg-brand-500" },
+    { stage: "Qualified", count: 28, value: 9400000, color: "bg-blue-500" },
+    { stage: "Proposal", count: 18, value: 7200000, color: "bg-purple-500" },
+    { stage: "Negotiation", count: 12, value: 5100000, color: "bg-amber-500" },
+    { stage: "Closed", count: 8, value: 3400000, color: "bg-emerald-500" },
+  ];
+
+  const statusColor = (s: string) => {
+    switch (s) {
+      case "new": return "info";
+      case "qualified": return "success";
+      case "contacted": return "warning";
+      case "negotiation": return "default";
+      default: return "default";
+    }
+  };
+
+  const eventTypeColor = (t: string) => {
+    switch (t) {
+      case "viewing": return "bg-brand-500/10 text-brand-400 border border-brand-500/20";
+      case "meeting": return "bg-gold-500/10 text-gold-400 border border-gold-500/20";
+      case "open_house": return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      case "closing": return "bg-purple-500/10 text-purple-400 border border-purple-500/20";
+      default: return "bg-dark-600/50 text-dark-300 border border-dark-600";
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -80,10 +83,19 @@ export function DashboardPage() {
           <h1 className="text-2xl font-bold text-dark-100">Dashboard</h1>
           <p className="text-sm text-dark-400 mt-1">Welcome back! Here's your business overview.</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Quick Action
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleCurrency}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-800 border border-dark-700 text-sm text-dark-200 hover:border-dark-600 transition-colors"
+          >
+            <DollarSign className="h-4 w-4" />
+            {currency === "USD" ? "$ USD" : "₹ INR"}
+          </button>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Quick Action
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -119,7 +131,7 @@ export function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-dark-300 hidden sm:block">{formatCurrency(lead.budget)}</span>
+                      <span className="text-sm text-dark-300 hidden sm:block">{formatAmount(lead.budget, currency)}</span>
                       <Badge variant={statusColor(lead.status) as any}>{lead.status}</Badge>
                     </div>
                   </div>
@@ -209,7 +221,7 @@ export function DashboardPage() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold text-gold-400">{formatCurrency(p.price)}</p>
+                        <p className="text-sm font-semibold text-gold-400">{formatAmount(p.price, currency)}</p>
                         <Badge variant={p.status === "available" ? "success" : "warning"}>{p.status}</Badge>
                       </div>
                     </div>
@@ -226,7 +238,7 @@ export function DashboardPage() {
             <CardContent className="space-y-3">
               {[
                 { label: "Conversion Rate", value: "24.8%", trend: "up", change: "+2.3%" },
-                { label: "Avg. Deal Size", value: formatCurrency(385000), trend: "up", change: "+5.1%" },
+                { label: "Avg. Deal Size", value: formatAmount(385000, currency), trend: "up", change: "+5.1%" },
                 { label: "Response Time", value: "2.4h", trend: "down", change: "-0.8h" },
               ].map((m) => (
                 <div key={m.label} className="flex items-center justify-between">

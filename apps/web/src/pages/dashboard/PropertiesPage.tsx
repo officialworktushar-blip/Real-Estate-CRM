@@ -18,7 +18,8 @@ import { Input } from "@/components/common/Input";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent } from "@/components/common/Card";
 import { TableRowSkeleton } from "@/components/common/Skeleton";
-import { formatCurrency } from "@/utils/helpers";
+import { formatAmount } from "@/utils/currency";
+import { useCurrencyStore } from "@/stores/currencyStore";
 
 type PropertyStatus = "available" | "pending" | "sold" | "off_market";
 type ViewMode = "grid" | "table";
@@ -45,6 +46,7 @@ const statusConfig: Record<PropertyStatus, { label: string; variant: string }> =
 const typeFilters = ["All", "Single Family", "Condo", "Townhouse", "Loft", "Studio", "Penthouse"];
 
 export function PropertiesPage() {
+  const { currency, toggleCurrency } = useCurrencyStore();
   const [isLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [search, setSearch] = useState("");
@@ -68,10 +70,19 @@ export function PropertiesPage() {
           <h1 className="text-2xl font-bold text-dark-100">Properties</h1>
           <p className="text-sm text-dark-400 mt-1">{filtered.length} properties</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Property
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleCurrency}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-800 border border-dark-700 text-sm text-dark-200 hover:border-dark-600 transition-colors"
+          >
+            <DollarSign className="h-4 w-4" />
+            {currency === "USD" ? "$ USD" : "₹ INR"}
+          </button>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Property
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -135,7 +146,7 @@ export function PropertiesPage() {
                   <Heart className="h-4 w-4" />
                 </button>
                 <div className="absolute bottom-3 left-3">
-                  <p className="text-xl font-bold text-white drop-shadow-lg">{formatCurrency(prop.price)}</p>
+                  <p className="text-xl font-bold text-white drop-shadow-lg">{formatAmount(prop.price, currency)}</p>
                 </div>
               </div>
               <div className="p-4 space-y-2">
@@ -201,7 +212,7 @@ export function PropertiesPage() {
                           <span className="text-sm text-dark-300">{prop.sqft.toLocaleString()}</span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-sm font-semibold text-gold-400">{formatCurrency(prop.price)}</span>
+                          <span className="text-sm font-semibold text-gold-400">{formatAmount(prop.price, currency)}</span>
                         </td>
                         <td className="px-4 py-3">
                           <Badge variant={statusConfig[prop.status].variant as any}>{statusConfig[prop.status].label}</Badge>
