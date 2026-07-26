@@ -1,8 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useGuestStore } from "@/stores/guestStore";
-import { api } from "@/services/api";
-import { supabase } from "@/services/supabase";
+import { supabase } from "@/lib/supabase";
 import type { User } from "@/types";
 
 const GUEST_USER: User = {
@@ -13,36 +12,79 @@ const GUEST_USER: User = {
   is_guest: true,
 };
 
+function mapSupabaseUser(supabaseUser: any): User {
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email ?? "",
+    full_name:
+      supabaseUser.user_metadata?.full_name ??
+      supabaseUser.user_metadata?.name ??
+      supabaseUser.email?.split("@")[0] ??
+      "User",
+    avatar_url: supabaseUser.user_metadata?.avatar_url,
+    role: "user",
+    is_guest: false,
+  };
+}
+
 export function useAuth() {
   const { user, setUser, setLoading } = useAuthStore();
   const { isGuest, enterGuestMode, exitGuestMode } = useGuestStore();
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    api
-      .get<{ data: { user: unknown } }>("/auth/me")
-      .then((res) => {
-        setUser(res.data.user as User);
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (session?.user) {
+          setUser(mapSupabaseUser(session.user));
+        }
       })
-      .catch(() => {
-        localStorage.removeItem("access_token");
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    (_event, session) => {
+      if (session?.user) {
+        setUser(mapSupabaseUser(session.user));
+      } else if (!useGuestStore.getState().isGuest) {
+        setUser(null);
+      }
+    }
+  );
+
+    return () => subscription.unsubscribe();
   }, [setUser, setLoading]);
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const res = await api.post<{
-        data: { session: { access_token: string }; user: unknown };
-      }>("/auth/login", { email, password });
-      localStorage.setItem("access_token", res.data.session.access_token);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        switch (error.message) {
+          case "Invalid login credentials":
+            throw new Error("Invalid email or password. Please try again.");
+          case "Email not confirmed":
+            throw new Error(
+              "Please confirm your email address before signing in."
+            );
+          case "Too many requests":
+            throw new Error(
+              "Too many login attempts. Please wait a moment and try again."
+            );
+          default:
+            throw new Error(error.message || "Login failed. Please try again.");
+        }
+      }
+
+      if (data.session) {
+        localStorage.setItem("access_token", data.session.access_token);
+      }
       exitGuestMode();
-      setUser(res.data.user as User);
-      return res.data;
+      setUser(mapSupabaseUser(data.user));
+      return data;
     },
     [setUser, exitGuestMode]
   );
@@ -54,18 +96,54 @@ export function useAuth() {
         redirectTo: `${window.location.origin}/dashboard`,
       },
     });
-    if (error) throw error;
+    if (error) {
+      throw new Error(
+        error.message || "Google sign-in failed. Please try again."
+      );
+    }
   }, []);
 
   const register = useCallback(
     async (fullName: string, email: string, password: string) => {
-      const res = await api.post<{ data: { user: unknown } }>(
-        "/auth/register",
-        { full_name: fullName, email, password }
-      );
-      return res.data;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName },
+        },
+      });
+
+      if (error) {
+        switch (error.message) {
+          case "User already registered":
+            throw new Error(
+              "An account with this email already exists. Please sign in instead."
+            );
+          case "Password should be at least 6 characters":
+            throw new Error("Password must be at least 6 characters long.");
+          case "Unable to validate email address: invalid format":
+            throw new Error("Please enter a valid email address.");
+          case "Signup is disabled":
+            throw new Error(
+              "New registrations are currently disabled. Please contact support."
+            );
+          default:
+            throw new Error(
+              error.message || "Registration failed. Please try again."
+            );
+        }
+      }
+
+      if (data.user) {
+        if (data.session) {
+          localStorage.setItem("access_token", data.session.access_token);
+          setUser(mapSupabaseUser(data.user));
+        }
+      }
+
+      return data;
     },
-    []
+    [setUser]
   );
 
   const registerWithGoogle = useCallback(async () => {
@@ -75,7 +153,11 @@ export function useAuth() {
         redirectTo: `${window.location.origin}/dashboard`,
       },
     });
-    if (error) throw error;
+    if (error) {
+      throw new Error(
+        error.message || "Google sign-up failed. Please try again."
+      );
+    }
   }, []);
 
   const loginAsGuest = useCallback(() => {
@@ -84,7 +166,8 @@ export function useAuth() {
     setLoading(false);
   }, [enterGuestMode, setUser, setLoading]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("access_token");
     exitGuestMode();
     setUser(null);

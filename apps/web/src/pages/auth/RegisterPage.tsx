@@ -5,6 +5,14 @@ import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Card, CardContent } from "@/components/common/Card";
 
+function friendlyError(err: unknown): string {
+  if (err instanceof TypeError && err.message === "Failed to fetch") {
+    return "Unable to connect. Please check your internet connection and try again.";
+  }
+  if (err instanceof Error) return err.message;
+  return "An unexpected error occurred. Please try again.";
+}
+
 export function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,8 +33,8 @@ export function RegisterPage() {
       await register(fullName, email, password);
       setSuccess("Account created! Redirecting to login...");
       setTimeout(() => navigate("/auth/login"), 1500);
-    } catch (err: any) {
-      setError(err.message || "Registration failed");
+    } catch (err) {
+      setError(friendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -37,8 +45,8 @@ export function RegisterPage() {
     setGoogleLoading(true);
     try {
       await registerWithGoogle();
-    } catch (err: any) {
-      setError(err.message || "Google sign-up failed");
+    } catch (err) {
+      setError(friendlyError(err));
       setGoogleLoading(false);
     }
   };

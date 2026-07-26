@@ -5,6 +5,14 @@ import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Card, CardContent } from "@/components/common/Card";
 
+function friendlyError(err: unknown): string {
+  if (err instanceof TypeError && err.message === "Failed to fetch") {
+    return "Unable to connect. Please check your internet connection and try again.";
+  }
+  if (err instanceof Error) return err.message;
+  return "An unexpected error occurred. Please try again.";
+}
+
 export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,8 +31,8 @@ export function LoginPage() {
     try {
       await login(email, password);
       navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err) {
+      setError(friendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -35,8 +43,8 @@ export function LoginPage() {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-    } catch (err: any) {
-      setError(err.message || "Google sign-in failed");
+    } catch (err) {
+      setError(friendlyError(err));
       setGoogleLoading(false);
     }
   };
