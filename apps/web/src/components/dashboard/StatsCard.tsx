@@ -11,22 +11,22 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, change, changeType = "neutral", icon }: StatsCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <div className="bg-dark-800 rounded-xl border border-dark-700 shadow-sm p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-2xl font-bold mt-1">{value}</p>
+          <p className="text-sm font-medium text-dark-400">{title}</p>
+          <p className="text-2xl font-bold mt-1 text-dark-100">{value}</p>
           {change && (
             <p className={cn("text-sm mt-1", {
-              "text-green-600": changeType === "positive",
-              "text-red-600": changeType === "negative",
-              "text-gray-500": changeType === "neutral",
+              "text-emerald-400": changeType === "positive",
+              "text-red-400": changeType === "negative",
+              "text-dark-400": changeType === "neutral",
             })}>
               {change}
             </p>
           )}
         </div>
-        <div className="p-3 bg-brand-50 rounded-lg text-brand-600">{icon}</div>
+        <div className="p-3 bg-gold-500/10 rounded-lg text-gold-400">{icon}</div>
       </div>
     </div>
   );

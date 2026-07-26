@@ -8,14 +8,14 @@ interface CardProps {
 
 export function Card({ children, className }: CardProps) {
   return (
-    <div className={cn("bg-white rounded-xl border border-gray-200 shadow-sm", className)}>
+    <div className={cn("bg-dark-800 border border-dark-700 rounded-xl shadow-sm", className)}>
       {children}
     </div>
   );
 }
 
 export function CardHeader({ children, className }: CardProps) {
-  return <div className={cn("px-6 py-4 border-b border-gray-200", className)}>{children}</div>;
+  return <div className={cn("px-6 py-4 border-b border-dark-700", className)}>{children}</div>;
 }
 
 export function CardContent({ children, className }: CardProps) {
