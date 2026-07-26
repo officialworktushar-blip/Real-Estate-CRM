@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/common/BrandLogo";
 
 export function AuthLayout() {
-  const { user, isLoading } = useAuth();
+  const { user, isGuest, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -16,7 +16,7 @@ export function AuthLayout() {
     );
   }
 
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user && !isGuest) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-dark-950 px-4 overflow-hidden">

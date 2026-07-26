@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AdminRoute } from "./AdminRoute";
+import { GuestGuard } from "./GuestGuard";
 
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
@@ -62,10 +63,24 @@ export function AppRoutes() {
       >
         <Route index element={<AdminDashboardPage />} />
         <Route path="users" element={<UsersPage />} />
-        <Route path="subscriptions" element={<SubscriptionsPage />} />
+        <Route
+          path="subscriptions"
+          element={
+            <GuestGuard>
+              <SubscriptionsPage />
+            </GuestGuard>
+          }
+        />
+        <Route
+          path="billing"
+          element={
+            <GuestGuard>
+              <BillingPage />
+            </GuestGuard>
+          }
+        />
         <Route path="settings" element={<SystemSettingsPage />} />
         <Route path="audit-logs" element={<AuditLogsPage />} />
-        <Route path="billing" element={<BillingPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

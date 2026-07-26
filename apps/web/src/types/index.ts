@@ -5,6 +5,7 @@ export interface User {
   avatar_url?: string;
   role: "user" | "super_admin";
   organization_id?: string;
+  is_guest?: boolean;
 }
 
 export interface AppState {

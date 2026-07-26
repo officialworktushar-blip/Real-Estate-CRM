@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useGuestStore } from "@/stores/guestStore";
 import { cn } from "@/utils/helpers";
 import { BrandLogo } from "./BrandLogo";
 
@@ -44,6 +45,7 @@ const adminItems = [
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
   const user = useAuthStore((s) => s.user);
+  const isGuest = useGuestStore((s) => s.isGuest);
   const isAdmin = user?.role === "super_admin";
 
   return (
@@ -143,8 +145,23 @@ export function Sidebar() {
 
         {sidebarOpen && (
           <div className="px-4 py-3 border-t border-dark-700">
-            <p className="text-sm text-dark-200 truncate font-medium">{user?.full_name}</p>
-            <p className="text-xs text-dark-500 truncate">{user?.email}</p>
+            {isGuest ? (
+              <div>
+                <p className="text-sm text-dark-200 truncate font-medium">Guest User</p>
+                <Link
+                  to="/auth/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-xs text-gold-400 hover:text-gold-300 transition-colors"
+                >
+                  Create an account
+                </Link>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-dark-200 truncate font-medium">{user?.full_name}</p>
+                <p className="text-xs text-dark-500 truncate">{user?.email}</p>
+              </div>
+            )}
           </div>
         )}
       </aside>

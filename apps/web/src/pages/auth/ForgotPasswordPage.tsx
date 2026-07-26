@@ -27,18 +27,31 @@ export function ForgotPasswordPage() {
       <CardContent className="pt-6">
         {sent ? (
           <div className="text-center py-4">
-            <p className="text-sm text-gray-600">Check your email for a password reset link.</p>
+            <p className="text-sm text-dark-300">
+              Check your email for a password reset link.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Sending..." : "Send Reset Link"}
             </Button>
           </form>
         )}
-        <div className="mt-4 text-center text-sm text-gray-500">
-          <Link to="/auth/login" className="text-brand-600 hover:underline">Back to login</Link>
+        <div className="mt-4 text-center text-sm">
+          <Link
+            to="/auth/login"
+            className="text-gold-400 hover:text-gold-300 transition-colors"
+          >
+            Back to login
+          </Link>
         </div>
       </CardContent>
     </Card>
