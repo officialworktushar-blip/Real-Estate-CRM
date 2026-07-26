@@ -21,7 +21,7 @@ export const config = {
     webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
   },
   email: {
-    from: process.env.EMAIL_FROM || "noreply@oryntal.com",
+    from: process.env.EMAIL_FROM || "Oryntal Estate <support.oryntal@agency.org.in>",
     resendApiKey: process.env.RESEND_API_KEY || "",
   },
   frontend: {

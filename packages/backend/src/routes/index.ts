@@ -8,6 +8,7 @@ import dealsRoutes from "./deals.routes";
 import calendarRoutes from "./calendar.routes";
 import reportsRoutes from "./reports.routes";
 import billingRoutes from "./billing.routes";
+import emailRoutes from "./email.routes";
 import webhooksRoutes from "./webhooks.routes";
 import adminRoutes from "./admin";
 
@@ -21,6 +22,7 @@ router.use("/deals", auth, dealsRoutes);
 router.use("/calendar", auth, calendarRoutes);
 router.use("/reports", auth, reportsRoutes);
 router.use("/billing", auth, billingRoutes);
+router.use("/email", auth, emailRoutes);
 router.use("/admin", auth, adminRoutes);
 router.use("/webhooks", webhooksRoutes);
 
