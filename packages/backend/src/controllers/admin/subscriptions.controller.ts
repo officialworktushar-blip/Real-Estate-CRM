@@ -14,7 +14,7 @@ export const adminSubscriptionsController = {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const sub = await adminSubscriptionsService.update(req.params.id, req.body);
+      const sub = await adminSubscriptionsService.update(String(req.params.id), req.body);
       res.json({ data: sub, message: "Subscription updated" });
     } catch (err) {
       next(err);

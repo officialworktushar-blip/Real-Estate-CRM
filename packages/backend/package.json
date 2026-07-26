@@ -19,6 +19,8 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
     "morgan": "^1.10.0",
+    "razorpay": "^2.9.5",
+    "stripe": "^17.5.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {

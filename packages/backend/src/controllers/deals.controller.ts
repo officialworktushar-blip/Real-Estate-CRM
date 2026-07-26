@@ -17,7 +17,7 @@ export const dealsController = {
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      const deal = await dealsService.getById(req.params.id, orgId);
+      const deal = await dealsService.getById(String(req.params.id), orgId);
       res.json({ data: deal });
     } catch (err) {
       next(err);
@@ -37,7 +37,7 @@ export const dealsController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      const deal = await dealsService.update(req.params.id, req.body, orgId);
+      const deal = await dealsService.update(String(req.params.id), req.body, orgId);
       res.json({ data: deal, message: "Deal updated" });
     } catch (err) {
       next(err);
@@ -47,7 +47,7 @@ export const dealsController = {
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      await dealsService.remove(req.params.id, orgId);
+      await dealsService.remove(String(req.params.id), orgId);
       res.json({ message: "Deal deleted" });
     } catch (err) {
       next(err);

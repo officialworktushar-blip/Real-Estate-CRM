@@ -23,7 +23,7 @@ export const leadsController = {
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      const lead = await leadsService.getById(req.params.id, orgId);
+      const lead = await leadsService.getById(String(req.params.id), orgId);
       res.json({ data: lead });
     } catch (err) {
       next(err);
@@ -43,7 +43,7 @@ export const leadsController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      const lead = await leadsService.update(req.params.id, req.body, orgId);
+      const lead = await leadsService.update(String(req.params.id), req.body, orgId);
       res.json({ data: lead, message: "Lead updated" });
     } catch (err) {
       next(err);
@@ -53,7 +53,7 @@ export const leadsController = {
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      await leadsService.remove(req.params.id, orgId);
+      await leadsService.remove(String(req.params.id), orgId);
       res.json({ message: "Lead deleted" });
     } catch (err) {
       next(err);

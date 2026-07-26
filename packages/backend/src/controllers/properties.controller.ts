@@ -21,7 +21,7 @@ export const propertiesController = {
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      const property = await propertiesService.getById(req.params.id, orgId);
+      const property = await propertiesService.getById(String(req.params.id), orgId);
       res.json({ data: property });
     } catch (err) {
       next(err);
@@ -41,7 +41,7 @@ export const propertiesController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      const property = await propertiesService.update(req.params.id, req.body, orgId);
+      const property = await propertiesService.update(String(req.params.id), req.body, orgId);
       res.json({ data: property, message: "Property updated" });
     } catch (err) {
       next(err);
@@ -51,7 +51,7 @@ export const propertiesController = {
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      await propertiesService.remove(req.params.id, orgId);
+      await propertiesService.remove(String(req.params.id), orgId);
       res.json({ message: "Property deleted" });
     } catch (err) {
       next(err);

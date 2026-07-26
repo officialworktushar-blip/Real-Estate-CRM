@@ -7,6 +7,8 @@ import clientsRoutes from "./clients.routes";
 import dealsRoutes from "./deals.routes";
 import calendarRoutes from "./calendar.routes";
 import reportsRoutes from "./reports.routes";
+import billingRoutes from "./billing.routes";
+import webhooksRoutes from "./webhooks.routes";
 import adminRoutes from "./admin";
 
 const router = Router();
@@ -18,6 +20,8 @@ router.use("/clients", auth, clientsRoutes);
 router.use("/deals", auth, dealsRoutes);
 router.use("/calendar", auth, calendarRoutes);
 router.use("/reports", auth, reportsRoutes);
+router.use("/billing", auth, billingRoutes);
 router.use("/admin", auth, adminRoutes);
+router.use("/webhooks", webhooksRoutes);
 
 export default router;

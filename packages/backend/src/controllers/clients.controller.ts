@@ -17,7 +17,7 @@ export const clientsController = {
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      const client = await clientsService.getById(req.params.id, orgId);
+      const client = await clientsService.getById(String(req.params.id), orgId);
       res.json({ data: client });
     } catch (err) {
       next(err);
@@ -37,7 +37,7 @@ export const clientsController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      const client = await clientsService.update(req.params.id, req.body, orgId);
+      const client = await clientsService.update(String(req.params.id), req.body, orgId);
       res.json({ data: client, message: "Client updated" });
     } catch (err) {
       next(err);
@@ -47,7 +47,7 @@ export const clientsController = {
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
       const orgId = getOrganizationId(req);
-      await clientsService.remove(req.params.id, orgId);
+      await clientsService.remove(String(req.params.id), orgId);
       res.json({ message: "Client deleted" });
     } catch (err) {
       next(err);

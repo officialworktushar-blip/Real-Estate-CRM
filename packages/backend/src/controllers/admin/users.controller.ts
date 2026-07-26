@@ -14,7 +14,7 @@ export const adminUsersController = {
 
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await adminUsersService.getById(req.params.id);
+      const user = await adminUsersService.getById(String(req.params.id));
       res.json({ data: user });
     } catch (err) {
       next(err);
@@ -23,7 +23,7 @@ export const adminUsersController = {
 
   async updateRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await adminUsersService.updateRole(req.params.id, req.body.role);
+      const user = await adminUsersService.updateRole(String(req.params.id), req.body.role);
       res.json({ data: user, message: "Role updated" });
     } catch (err) {
       next(err);
@@ -32,7 +32,7 @@ export const adminUsersController = {
 
   async deactivate(req: Request, res: Response, next: NextFunction) {
     try {
-      await adminUsersService.deactivate(req.params.id);
+      await adminUsersService.deactivate(String(req.params.id));
       res.json({ message: "User deactivated" });
     } catch (err) {
       next(err);

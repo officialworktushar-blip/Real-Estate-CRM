@@ -11,13 +11,15 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
-app.use(express.json({ limit: "10mb" }));
 app.use(morgan("dev"));
 app.use(rateLimiter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
+
+app.use("/api/webhooks/stripe", express.raw({ type: "application/json" }));
+app.use(express.json({ limit: "10mb" }));
 
 app.use("/api", routes);
 
