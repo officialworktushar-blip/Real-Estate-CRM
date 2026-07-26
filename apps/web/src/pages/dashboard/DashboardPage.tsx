@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Users,
   Home,
@@ -11,50 +10,60 @@ import {
   Calendar,
   Clock,
   MapPin,
+  AlertCircle,
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { StatsCardSkeleton } from "@/components/common/Skeleton";
 import { Card, CardHeader, CardContent } from "@/components/common/Card";
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
-import { formatDate } from "@/utils/helpers";
+import { useLeads } from "@/hooks/useLeads";
+import { useProperties } from "@/hooks/useProperties";
+import { useCalendar } from "@/hooks/useCalendar";
+import { useReports } from "@/hooks/useReports";
 import { formatAmount } from "@/utils/currency";
 import { useCurrencyStore } from "@/stores/currencyStore";
 
 export function DashboardPage() {
   const { currency, toggleCurrency } = useCurrencyStore();
-  const [isLoading] = useState(false);
+  const { leads, isLoading: leadsLoading } = useLeads();
+  const { properties, isLoading: propertiesLoading } = useProperties();
+  const { events, isLoading: calendarLoading } = useCalendar();
+  const { pipeline, performance, isLoading: reportsLoading } = useReports();
+
+  const isLoading = leadsLoading || propertiesLoading || calendarLoading || reportsLoading;
+
+  const totalDeals = pipeline.reduce((sum, s) => sum + s.count, 0);
+  const pipelineValue = pipeline.reduce((sum, s) => sum + s.value, 0);
 
   const statsData = [
-    { title: "Total Leads", value: 248, change: "+12% this month", changeType: "positive" as const, icon: <Users className="h-6 w-6" /> },
-    { title: "Active Properties", value: 86, change: "+5% this month", changeType: "positive" as const, icon: <Home className="h-6 w-6" /> },
-    { title: "Open Deals", value: 34, change: "-2% this month", changeType: "negative" as const, icon: <Handshake className="h-6 w-6" /> },
-    { title: "Revenue", value: formatAmount(1284500, currency), change: "+18% this month", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
+    { title: "Total Leads", value: leads.length, change: "All leads", changeType: "neutral" as const, icon: <Users className="h-6 w-6" /> },
+    { title: "Active Properties", value: properties.length, change: "All properties", changeType: "neutral" as const, icon: <Home className="h-6 w-6" /> },
+    { title: "Open Deals", value: totalDeals, change: `${pipeline.length} stages`, changeType: "neutral" as const, icon: <Handshake className="h-6 w-6" /> },
+    { title: "Pipeline Value", value: formatAmount(pipelineValue, currency), change: performance ? `${performance.conversion_rate}% conversion` : "Loading...", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
   ];
 
-  const recentLeads = [
-    { id: "1", name: "Sarah Mitchell", email: "sarah@email.com", source: "Website", status: "new", budget: 450000, created_at: "2026-07-25" },
-    { id: "2", name: "James Rodriguez", email: "james@email.com", source: "Referral", status: "qualified", budget: 720000, created_at: "2026-07-24" },
-    { id: "3", name: "Emily Chen", email: "emily@email.com", source: "Zillow", status: "contacted", budget: 380000, created_at: "2026-07-23" },
-    { id: "4", name: "Michael Brown", email: "michael@email.com", source: "Social Media", status: "new", budget: 550000, created_at: "2026-07-22" },
-    { id: "5", name: "Lisa Anderson", email: "lisa@email.com", source: "Open House", status: "negotiation", budget: 620000, created_at: "2026-07-21" },
-  ];
+  const recentLeads = leads.slice(0, 5).map((lead) => ({
+    id: lead.id,
+    name: `${lead.first_name} ${lead.last_name}`,
+    email: lead.email || "",
+    source: lead.source,
+    status: lead.status,
+    budget: lead.budget_max || lead.budget_min || 0,
+    created_at: lead.created_at,
+  }));
 
-  const upcomingEvents = [
-    { id: "1", title: "Property Viewing - 123 Oak Ave", time: "10:00 AM", date: "Today", type: "viewing" },
-    { id: "2", title: "Client Meeting - Sarah Mitchell", time: "2:00 PM", date: "Today", type: "meeting" },
-    { id: "3", title: "Open House - 456 Pine St", time: "11:00 AM", date: "Tomorrow", type: "open_house" },
-    { id: "4", title: "Deal Closing - Rodriguez", time: "3:00 PM", date: "Jul 28", type: "closing" },
-  ];
-
-  const pipelineStages = [
-    { stage: "Lead", count: 45, value: 18500000, color: "bg-dark-500" },
-    { stage: "Contacted", count: 32, value: 12800000, color: "bg-brand-500" },
-    { stage: "Qualified", count: 28, value: 9400000, color: "bg-blue-500" },
-    { stage: "Proposal", count: 18, value: 7200000, color: "bg-purple-500" },
-    { stage: "Negotiation", count: 12, value: 5100000, color: "bg-amber-500" },
-    { stage: "Closed", count: 8, value: 3400000, color: "bg-emerald-500" },
-  ];
+  const upcomingEvents = events.slice(0, 4).map((evt) => ({
+    id: evt.id,
+    title: evt.title,
+    time: new Date(evt.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+    date: new Date(evt.start_time).toDateString() === new Date().toDateString()
+      ? "Today"
+      : new Date(evt.start_time).toDateString() === new Date(Date.now() + 86400000).toDateString()
+        ? "Tomorrow"
+        : new Date(evt.start_time).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    type: evt.event_type,
+  }));
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -118,25 +127,31 @@ export function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-dark-700/50">
-                {recentLeads.map((lead) => (
-                  <div key={lead.id} className="flex items-center justify-between px-6 py-3 hover:bg-dark-700/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-gold-500/10 flex items-center justify-center text-sm font-semibold text-gold-400">
-                        {lead.name.charAt(0)}
+              {leadsLoading ? (
+                <div className="px-6 py-8 text-center text-dark-500 text-sm">Loading leads...</div>
+              ) : recentLeads.length === 0 ? (
+                <div className="px-6 py-8 text-center text-dark-500 text-sm">No leads yet. Add your first lead to get started.</div>
+              ) : (
+                <div className="divide-y divide-dark-700/50">
+                  {recentLeads.map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between px-6 py-3 hover:bg-dark-700/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-gold-500/10 flex items-center justify-center text-sm font-semibold text-gold-400">
+                          {lead.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-dark-100">{lead.name}</p>
+                          <p className="text-xs text-dark-400">{lead.source}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-dark-100">{lead.name}</p>
-                        <p className="text-xs text-dark-400">{lead.source}</p>
+                      <div className="flex items-center gap-3">
+                        {lead.budget > 0 && <span className="text-sm text-dark-300 hidden sm:block">{formatAmount(lead.budget, currency)}</span>}
+                        <Badge variant={statusColor(lead.status) as any}>{lead.status}</Badge>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-dark-300 hidden sm:block">{formatAmount(lead.budget, currency)}</span>
-                      <Badge variant={statusColor(lead.status) as any}>{lead.status}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -145,23 +160,29 @@ export function DashboardPage() {
               <h3 className="font-semibold text-dark-100">Deal Pipeline</h3>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {pipelineStages.map((stage) => (
-                  <div key={stage.stage} className="flex items-center gap-4">
-                    <div className="w-24 text-xs font-medium text-dark-400 shrink-0">{stage.stage}</div>
-                    <div className="flex-1 h-7 bg-dark-700/50 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${stage.color} transition-all duration-500`}
-                        style={{ width: `${(stage.count / 45) * 100}%` }}
-                      />
+              {reportsLoading ? (
+                <div className="text-center text-dark-500 text-sm py-4">Loading pipeline...</div>
+              ) : pipeline.length === 0 ? (
+                <div className="text-center text-dark-500 text-sm py-4">No pipeline data yet.</div>
+              ) : (
+                <div className="space-y-4">
+                  {pipeline.map((stage) => (
+                    <div key={stage.stage} className="flex items-center gap-4">
+                      <div className="w-24 text-xs font-medium text-dark-400 shrink-0 capitalize">{stage.stage.replace("_", " ")}</div>
+                      <div className="flex-1 h-7 bg-dark-700/50 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                          style={{ width: `${Math.max((stage.count / Math.max(...pipeline.map((s) => s.count), 1)) * 100, 2)}%` }}
+                        />
+                      </div>
+                      <div className="text-right shrink-0 w-20">
+                        <span className="text-sm font-semibold text-dark-200">{stage.count}</span>
+                        <span className="text-xs text-dark-400 ml-1">deals</span>
+                      </div>
                     </div>
-                    <div className="text-right shrink-0 w-20">
-                      <span className="text-sm font-semibold text-dark-200">{stage.count}</span>
-                      <span className="text-xs text-dark-400 ml-1">deals</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -177,26 +198,32 @@ export function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-dark-700/50">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="px-6 py-3 hover:bg-dark-700/30 transition-colors">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-dark-100 truncate">{event.title}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Clock className="h-3 w-3 text-dark-500" />
-                          <span className="text-xs text-dark-400">{event.time}</span>
-                          <span className="text-xs text-dark-500">·</span>
-                          <span className="text-xs text-dark-400">{event.date}</span>
+              {calendarLoading ? (
+                <div className="px-6 py-8 text-center text-dark-500 text-sm">Loading events...</div>
+              ) : upcomingEvents.length === 0 ? (
+                <div className="px-6 py-8 text-center text-dark-500 text-sm">No upcoming events.</div>
+              ) : (
+                <div className="divide-y divide-dark-700/50">
+                  {upcomingEvents.map((event) => (
+                    <div key={event.id} className="px-6 py-3 hover:bg-dark-700/30 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-dark-100 truncate">{event.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Clock className="h-3 w-3 text-dark-500" />
+                            <span className="text-xs text-dark-400">{event.time}</span>
+                            <span className="text-xs text-dark-500">·</span>
+                            <span className="text-xs text-dark-400">{event.date}</span>
+                          </div>
                         </div>
+                        <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${eventTypeColor(event.type)}`}>
+                          {event.type.replace("_", " ")}
+                        </span>
                       </div>
-                      <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${eventTypeColor(event.type)}`}>
-                        {event.type.replace("_", " ")}
-                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -205,29 +232,31 @@ export function DashboardPage() {
               <h3 className="font-semibold text-dark-100">Top Properties</h3>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-dark-700/50">
-                {[
-                  { title: "Luxury Villa, Beverly Hills", price: 2450000, beds: 5, status: "available" },
-                  { title: "Modern Condo, Downtown", price: 875000, beds: 2, status: "available" },
-                  { title: "Family Home, Pasadena", price: 1120000, beds: 4, status: "pending" },
-                ].map((p, i) => (
-                  <div key={i} className="px-6 py-3 hover:bg-dark-700/30 transition-colors">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-dark-100 truncate">{p.title}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <MapPin className="h-3 w-3 text-dark-500" />
-                          <span className="text-xs text-dark-400">{p.beds} beds</span>
+              {propertiesLoading ? (
+                <div className="px-6 py-8 text-center text-dark-500 text-sm">Loading properties...</div>
+              ) : properties.length === 0 ? (
+                <div className="px-6 py-8 text-center text-dark-500 text-sm">No properties yet.</div>
+              ) : (
+                <div className="divide-y divide-dark-700/50">
+                  {properties.slice(0, 3).map((p) => (
+                    <div key={p.id} className="px-6 py-3 hover:bg-dark-700/30 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-dark-100 truncate">{p.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <MapPin className="h-3 w-3 text-dark-500" />
+                            <span className="text-xs text-dark-400">{p.bedrooms || 0} beds · {p.city}</span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-semibold text-gold-400">{formatAmount(p.price, currency)}</p>
+                          <Badge variant={p.status === "available" ? "success" : p.status === "pending" ? "warning" : "default"}>{p.status}</Badge>
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold text-gold-400">{formatAmount(p.price, currency)}</p>
-                        <Badge variant={p.status === "available" ? "success" : "warning"}>{p.status}</Badge>
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -236,22 +265,35 @@ export function DashboardPage() {
               <h3 className="font-semibold text-dark-100">Performance</h3>
             </CardHeader>
             <CardContent className="space-y-3">
-              {[
-                { label: "Conversion Rate", value: "24.8%", trend: "up", change: "+2.3%" },
-                { label: "Avg. Deal Size", value: formatAmount(385000, currency), trend: "up", change: "+5.1%" },
-                { label: "Response Time", value: "2.4h", trend: "down", change: "-0.8h" },
-              ].map((m) => (
-                <div key={m.label} className="flex items-center justify-between">
-                  <span className="text-sm text-dark-300">{m.label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-dark-100">{m.value}</span>
-                    <span className={`flex items-center text-xs ${m.trend === "up" ? "text-emerald-400" : "text-emerald-400"}`}>
-                      {m.trend === "up" ? <TrendingUp className="h-3 w-3 mr-0.5" /> : <TrendingDown className="h-3 w-3 mr-0.5" />}
-                      {m.change}
-                    </span>
+              {reportsLoading ? (
+                <div className="text-center text-dark-500 text-sm py-4">Loading metrics...</div>
+              ) : performance ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-dark-300">Conversion Rate</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-dark-100">{performance.conversion_rate}%</span>
+                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-dark-300">Avg. Deal Size</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-dark-100">{formatAmount(performance.avg_deal_size, currency)}</span>
+                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-dark-300">Avg. Days to Close</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-dark-100">{performance.avg_days_to_close}d</span>
+                      <TrendingDown className="h-3 w-3 text-emerald-400" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-dark-500 text-sm py-4">No performance data yet.</div>
+              )}
             </CardContent>
           </Card>
         </div>

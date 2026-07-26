@@ -1,31 +1,44 @@
 import { useState, useEffect, useCallback } from "react";
-import { api } from "@/services/api";
+import { propertiesService } from "@/services/properties.service";
 import type { Property, PaginatedResponse } from "@/types";
 
 export function useProperties() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, total_pages: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
-  const fetchProperties = useCallback(async (page = 1) => {
+  const fetchProperties = useCallback(async (pageNum = 1, searchQuery = search) => {
     setIsLoading(true);
+    setError(null);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "20" });
-      if (search) params.set("search", search);
-      const res = await api.get<PaginatedResponse<Property>>(`/properties?${params}`);
+      const res = await propertiesService.list({ page: pageNum, limit: 20, search: searchQuery });
       setProperties(res.data);
       setMeta(res.meta);
     } catch (err) {
-      console.error("Failed to fetch properties:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch properties");
     } finally {
       setIsLoading(false);
     }
   }, [search]);
 
   useEffect(() => {
-    fetchProperties();
-  }, [fetchProperties]);
+    fetchProperties(page, search);
+  }, [page, search, fetchProperties]);
 
-  return { properties, meta, isLoading, search, setSearch, refetch: fetchProperties };
+  const refetch = useCallback(() => fetchProperties(page, search), [fetchProperties, page, search]);
+
+  return {
+    properties,
+    meta,
+    isLoading,
+    error,
+    search,
+    setSearch: (q: string) => { setSearch(q); setPage(1); },
+    page,
+    setPage,
+    refetch,
+  };
 }

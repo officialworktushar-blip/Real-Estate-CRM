@@ -6,11 +6,11 @@ import {
   MapPin,
   Clock,
   User,
-  Filter,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
+import { useCalendar } from "@/hooks/useCalendar";
 
 type EventType = "viewing" | "meeting" | "open_house" | "closing" | "follow_up" | "inspection";
 
@@ -22,24 +22,6 @@ const eventTypeConfig: Record<EventType, { label: string; color: string; bgColor
   follow_up: { label: "Follow Up", color: "border-l-amber-500", bgColor: "bg-amber-500/10", textColor: "text-amber-400" },
   inspection: { label: "Inspection", color: "border-l-red-500", bgColor: "bg-red-500/10", textColor: "text-red-400" },
 };
-
-const dummyEvents = [
-  { id: "1", title: "Property Viewing - 1234 Pacific Coast Hwy", type: "viewing" as EventType, date: "2026-07-26", startTime: "10:00", endTime: "11:00", client: "Sarah Mitchell", location: "Malibu, CA" },
-  { id: "2", title: "Client Meeting - James Rodriguez", type: "meeting" as EventType, date: "2026-07-26", startTime: "14:00", endTime: "15:00", client: "James Rodriguez", location: "Office" },
-  { id: "3", title: "Open House - 567 Grand Ave", type: "open_house" as EventType, date: "2026-07-27", startTime: "11:00", endTime: "14:00", client: "N/A", location: "Los Angeles, CA" },
-  { id: "4", title: "Deal Closing - 890 Oak Lane", type: "closing" as EventType, date: "2026-07-28", startTime: "15:00", endTime: "16:00", client: "Emily Chen", location: "Title Company" },
-  { id: "5", title: "Follow Up - David Kim", type: "follow_up" as EventType, date: "2026-07-29", startTime: "09:00", endTime: "09:30", client: "David Kim", location: "Phone" },
-  { id: "6", title: "Property Viewing - 200 Ocean Ave", type: "viewing" as EventType, date: "2026-07-30", startTime: "13:00", endTime: "14:00", client: "David Kim", location: "Santa Monica, CA" },
-  { id: "7", title: "Home Inspection - 456 Oak Lane", type: "inspection" as EventType, date: "2026-07-31", startTime: "10:00", endTime: "12:00", client: "Lisa Anderson", location: "Glendale, CA" },
-  { id: "8", title: "Meeting - Rachel Taylor", type: "meeting" as EventType, date: "2026-08-01", startTime: "11:00", endTime: "11:30", client: "Rachel Taylor", location: "Coffee Shop" },
-  { id: "9", title: "Property Viewing - 555 Skyline Blvd", type: "viewing" as EventType, date: "2026-08-02", startTime: "15:00", endTime: "16:30", client: "Robert Garcia", location: "Beverly Hills, CA" },
-  { id: "10", title: "Open House - 321 Traction Ave", type: "open_house" as EventType, date: "2026-08-03", startTime: "12:00", endTime: "15:00", client: "N/A", location: "Arts District, LA" },
-  { id: "11", title: "Deal Closing - 789 Maple Dr", type: "closing" as EventType, date: "2026-08-04", startTime: "14:00", endTime: "15:00", client: "Kevin Nguyen", location: "Title Company" },
-  { id: "12", title: "Follow Up - Amanda White", type: "follow_up" as EventType, date: "2026-08-05", startTime: "10:00", endTime: "10:15", client: "Amanda White", location: "Email" },
-  { id: "13", title: "Client Meeting - Carlos Gutierrez", type: "meeting" as EventType, date: "2026-08-07", startTime: "16:00", endTime: "17:00", client: "Carlos Gutierrez", location: "Office" },
-  { id: "14", title: "Property Viewing - 123 Main St", type: "viewing" as EventType, date: "2026-08-10", startTime: "09:00", endTime: "10:00", client: "Amanda White", location: "Pasadena, CA" },
-  { id: "15", title: "Open House - 456 Vermont Ave", type: "open_house" as EventType, date: "2026-08-10", startTime: "13:00", endTime: "16:00", client: "N/A", location: "Koreatown, LA" },
-];
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -63,6 +45,10 @@ export function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(formatDateStr(today.getFullYear(), today.getMonth(), today.getDate()));
   const [typeFilter, setTypeFilter] = useState<EventType | "all">("all");
 
+  const startDate = formatDateStr(currentYear, currentMonth, 1);
+  const endDate = formatDateStr(currentYear, currentMonth, getDaysInMonth(currentYear, currentMonth));
+  const { events, isLoading } = useCalendar(startDate, endDate);
+
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
 
@@ -74,9 +60,10 @@ export function CalendarPage() {
   }, [firstDay, daysInMonth]);
 
   const eventsForDate = (dateStr: string) =>
-    dummyEvents.filter((e) => {
-      const matchDate = e.date === dateStr;
-      const matchType = typeFilter === "all" || e.type === typeFilter;
+    events.filter((e) => {
+      const eventDate = new Date(e.start_time).toISOString().split("T")[0];
+      const matchDate = eventDate === dateStr;
+      const matchType = typeFilter === "all" || e.event_type === typeFilter;
       return matchDate && matchType;
     });
 
@@ -105,8 +92,19 @@ export function CalendarPage() {
 
   const totalEventsForDay = (day: number) => {
     const dateStr = formatDateStr(currentYear, currentMonth, day);
-    return dummyEvents.filter((e) => e.date === dateStr).length;
+    return events.filter((e) => {
+      const eventDate = new Date(e.start_time).toISOString().split("T")[0];
+      return eventDate === dateStr;
+    }).length;
   };
+
+  const upcomingThisWeek = events.filter((e) => {
+    const d = new Date(e.start_time);
+    const now = new Date();
+    const weekEnd = new Date(now);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    return d >= now && d <= weekEnd;
+  }).slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -187,11 +185,14 @@ export function CalendarPage() {
                         {day}
                       </div>
                       <div className="space-y-0.5">
-                        {dayEvents.slice(0, 3).map((evt) => (
-                          <div key={evt.id} className={`text-[9px] leading-tight px-1 py-0.5 rounded truncate ${eventTypeConfig[evt.type].bgColor} ${eventTypeConfig[evt.type].textColor}`}>
-                            {evt.title.split(" - ")[0]}
-                          </div>
-                        ))}
+                        {dayEvents.slice(0, 3).map((evt) => {
+                          const config = eventTypeConfig[evt.event_type as EventType] || eventTypeConfig.meeting;
+                          return (
+                            <div key={evt.id} className={`text-[9px] leading-tight px-1 py-0.5 rounded truncate ${config.bgColor} ${config.textColor}`}>
+                              {evt.title.split(" - ")[0]}
+                            </div>
+                          );
+                        })}
                         {count > 3 && (
                           <div className="text-[9px] text-dark-400 px-1">+{count - 3} more</div>
                         )}
@@ -214,31 +215,36 @@ export function CalendarPage() {
               </h3>
             </CardHeader>
             <CardContent className="space-y-3">
-              {selectedEvents.length === 0 ? (
+              {isLoading ? (
+                <div className="text-center text-dark-500 text-sm py-8">Loading events...</div>
+              ) : selectedEvents.length === 0 ? (
                 <p className="text-sm text-dark-500 text-center py-8">No events scheduled</p>
               ) : (
-                selectedEvents.map((evt) => (
-                  <div key={evt.id} className={`border-l-2 ${eventTypeConfig[evt.type].color} rounded-r-lg ${eventTypeConfig[evt.type].bgColor} p-3`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-sm font-medium text-dark-100">{evt.title}</h4>
-                      <Badge variant="default">{eventTypeConfig[evt.type].label}</Badge>
+                selectedEvents.map((evt) => {
+                  const config = eventTypeConfig[evt.event_type as EventType] || eventTypeConfig.meeting;
+                  const startTime = new Date(evt.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                  const endTime = new Date(evt.end_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                  return (
+                    <div key={evt.id} className={`border-l-2 ${config.color} rounded-r-lg ${config.bgColor} p-3`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-sm font-medium text-dark-100">{evt.title}</h4>
+                        <Badge variant="default">{config.label}</Badge>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3 text-dark-500" />
+                          <span className="text-xs text-dark-300">{startTime} - {endTime}</span>
+                        </div>
+                        {evt.location && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3 text-dark-500" />
+                            <span className="text-xs text-dark-300">{evt.location}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-3 w-3 text-dark-500" />
-                        <span className="text-xs text-dark-300">{evt.startTime} - {evt.endTime}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User className="h-3 w-3 text-dark-500" />
-                        <span className="text-xs text-dark-300">{evt.client}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3 text-dark-500" />
-                        <span className="text-xs text-dark-300">{evt.location}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>
@@ -248,26 +254,25 @@ export function CalendarPage() {
               <h3 className="font-semibold text-dark-100">Upcoming This Week</h3>
             </CardHeader>
             <CardContent className="space-y-2">
-              {dummyEvents
-                .filter((e) => {
-                  const d = new Date(e.date + "T12:00:00");
-                  const now = new Date();
-                  const weekEnd = new Date(now);
-                  weekEnd.setDate(weekEnd.getDate() + 7);
-                  return d >= now && d <= weekEnd;
-                })
-                .slice(0, 5)
-                .map((evt) => (
-                  <div key={evt.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700/30 transition-colors">
-                    <div className={`h-2 w-2 rounded-full shrink-0 ${eventTypeConfig[evt.type].bgColor.replace("/10", "")}`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-dark-200 truncate">{evt.title}</p>
-                      <p className="text-[10px] text-dark-500">
-                        {new Date(evt.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · {evt.startTime}
-                      </p>
+              {upcomingThisWeek.length === 0 ? (
+                <p className="text-sm text-dark-500 text-center py-4">No upcoming events</p>
+              ) : (
+                upcomingThisWeek.map((evt) => {
+                  const config = eventTypeConfig[evt.event_type as EventType] || eventTypeConfig.meeting;
+                  return (
+                    <div key={evt.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700/30 transition-colors">
+                      <div className={`h-2 w-2 rounded-full shrink-0 ${config.bgColor.replace("/10", "")}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-dark-200 truncate">{evt.title}</p>
+                        <p className="text-[10px] text-dark-500">
+                          {new Date(evt.start_time).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} ·{" "}
+                          {new Date(evt.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })
+              )}
             </CardContent>
           </Card>
         </div>

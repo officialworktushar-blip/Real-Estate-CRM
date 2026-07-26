@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   DollarSign,
   Users,
@@ -14,54 +13,45 @@ import { Button } from "@/components/common/Button";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { StatsCardSkeleton } from "@/components/common/Skeleton";
-import { formatAmount } from "@/utils/currency";
+import { useReports } from "@/hooks/useReports";
+import { useLeads } from "@/hooks/useLeads";
 import { useCurrencyStore } from "@/stores/currencyStore";
-
-const monthlyRevenue = [
-  { month: "Jan", value: 145000 },
-  { month: "Feb", value: 168000 },
-  { month: "Mar", value: 192000 },
-  { month: "Apr", value: 175000 },
-  { month: "May", value: 210000 },
-  { month: "Jun", value: 198000 },
-  { month: "Jul", value: 196500 },
-];
-
-const leadSources = [
-  { source: "Website", count: 86, percentage: 34.7, color: "bg-brand-500" },
-  { source: "Referral", count: 62, percentage: 25.0, color: "bg-gold-500" },
-  { source: "Zillow", count: 41, percentage: 16.5, color: "bg-emerald-500" },
-  { source: "Social Media", count: 35, percentage: 14.1, color: "bg-purple-500" },
-  { source: "Open House", count: 24, percentage: 9.7, color: "bg-amber-500" },
-];
-
-const topAgents = [
-  { name: "Sarah Johnson", deals: 12, revenue: 425000, avatar: "SJ" },
-  { name: "Michael Chen", deals: 9, revenue: 312000, avatar: "MC" },
-  { name: "Emily Park", deals: 8, revenue: 287000, avatar: "EP" },
-  { name: "David Lee", deals: 6, revenue: 198000, avatar: "DL" },
-];
-
-const recentActivity = [
-  { action: "Deal Closed", detail: "789 Maple Dr - Kevin Nguyen", amount: 15300, time: "2 hours ago", type: "positive" },
-  { action: "New Lead", detail: "Jennifer Lee via Website", amount: null, time: "3 hours ago", type: "neutral" },
-  { action: "Deal Closed", detail: "200 Ocean Ave - Robert Garcia", amount: 96000, time: "1 day ago", type: "positive" },
-  { action: "Lead Lost", detail: "Amanda White - chose competitor", amount: null, time: "2 days ago", type: "negative" },
-  { action: "New Lead", detail: "Robert Garcia via Referral", amount: null, time: "2 days ago", type: "neutral" },
-];
-
-const maxRevenue = Math.max(...monthlyRevenue.map((m) => m.value));
+import { formatAmount } from "@/utils/currency";
 
 export function ReportsPage() {
   const { currency, toggleCurrency } = useCurrencyStore();
-  const [isLoading] = useState(false);
-  const [period, setPeriod] = useState<"monthly" | "quarterly" | "yearly">("monthly");
+  const { pipeline, performance, revenue, isLoading: reportsLoading } = useReports();
+  const { leads, isLoading: leadsLoading } = useLeads();
+
+  const isLoading = reportsLoading || leadsLoading;
+
+  const totalRevenue = revenue.reduce((sum, m) => sum + m.value, 0);
+  const totalLeads = leads.length;
+  const closedDeals = pipeline.find((s) => s.stage === "closed_won")?.count || 0;
+  const conversionRate = performance?.conversion_rate || 0;
+
+  const leadSources = leads.reduce((acc, lead) => {
+    const source = lead.source || "Other";
+    acc[source] = (acc[source] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const leadSourcesArray = Object.entries(leadSources)
+    .map(([source, count]) => ({
+      source,
+      count,
+      percentage: totalLeads > 0 ? Math.round((count / totalLeads) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const maxRevenue = Math.max(...revenue.map((m) => m.value), 1);
 
   const summaryStats = [
-    { title: "Total Revenue", value: formatAmount(1284500, currency), change: "+18.2% vs last quarter", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
-    { title: "Total Leads", value: "248", change: "+12.5% vs last quarter", changeType: "positive" as const, icon: <Users className="h-6 w-6" /> },
-    { title: "Properties Sold", value: "34", change: "+8.3% vs last quarter", changeType: "positive" as const, icon: <Home className="h-6 w-6" /> },
-    { title: "Conversion Rate", value: "24.8%", change: "+2.1% vs last quarter", changeType: "positive" as const, icon: <TrendingUp className="h-6 w-6" /> },
+    { title: "Total Revenue", value: formatAmount(totalRevenue, currency), change: performance ? `${performance.conversion_rate}% conversion` : "Loading...", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
+    { title: "Total Leads", value: totalLeads.toString(), change: `${leads.length} total`, changeType: "positive" as const, icon: <Users className="h-6 w-6" /> },
+    { title: "Deals Closed", value: closedDeals.toString(), change: `${pipeline.length} stages`, changeType: "positive" as const, icon: <Home className="h-6 w-6" /> },
+    { title: "Conversion Rate", value: `${conversionRate}%`, change: performance ? `Avg deal: ${formatAmount(performance.avg_deal_size, currency)}` : "Loading...", changeType: "positive" as const, icon: <TrendingUp className="h-6 w-6" /> },
   ];
 
   return (
@@ -72,15 +62,6 @@ export function ReportsPage() {
           <p className="text-sm text-dark-400 mt-1">Analytics and performance insights</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as typeof period)}
-            className="bg-dark-800 border border-dark-700 text-dark-200 text-sm rounded-lg px-3 py-2 focus:border-gold-500 focus:ring-gold-500/20"
-          >
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="yearly">Yearly</option>
-          </select>
           <button
             onClick={toggleCurrency}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-800 border border-dark-700 text-sm text-dark-200 hover:border-dark-600 transition-colors"
@@ -116,50 +97,71 @@ export function ReportsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-end gap-2 h-48">
-                {monthlyRevenue.map((m) => (
-                  <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[10px] text-dark-400">{formatAmount(m.value, currency)}</span>
-                    <div className="w-full bg-brand-500/20 rounded-t-md relative" style={{ height: `${(m.value / maxRevenue) * 140}px` }}>
-                      <div className="absolute inset-0 bg-brand-500 rounded-t-md opacity-80 hover:opacity-100 transition-opacity" />
+              {isLoading ? (
+                <div className="flex items-end gap-2 h-48">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <div key={i} className="flex-1 animate-pulse">
+                      <div className="bg-dark-700 rounded-t-md" style={{ height: `${Math.random() * 120 + 20}px` }} />
                     </div>
-                    <span className="text-xs text-dark-400">{m.month}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : revenue.length === 0 ? (
+                <div className="flex items-center justify-center h-48 text-dark-500 text-sm">No revenue data yet</div>
+              ) : (
+                <div className="flex items-end gap-2 h-48">
+                  {revenue.map((m) => (
+                    <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[10px] text-dark-400">{formatAmount(m.value, currency)}</span>
+                      <div className="w-full bg-brand-500/20 rounded-t-md relative" style={{ height: `${(m.value / maxRevenue) * 140}px` }}>
+                        <div className="absolute inset-0 bg-brand-500 rounded-t-md opacity-80 hover:opacity-100 transition-opacity" />
+                      </div>
+                      <span className="text-xs text-dark-400">{m.month}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-dark-100">Recent Activity</h3>
+              <h3 className="font-semibold text-dark-100">Pipeline Overview</h3>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-dark-700/50">
-                {recentActivity.map((activity, i) => (
-                  <div key={i} className="flex items-center justify-between px-6 py-3 hover:bg-dark-700/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                        activity.type === "positive" ? "bg-emerald-500/10" : activity.type === "negative" ? "bg-red-500/10" : "bg-dark-700"
-                      }`}>
-                        {activity.type === "positive" ? <TrendingUp className="h-4 w-4 text-emerald-400" /> : activity.type === "negative" ? <TrendingDown className="h-4 w-4 text-red-400" /> : <BarChart3 className="h-4 w-4 text-dark-400" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-dark-100">{activity.action}</p>
-                        <p className="text-xs text-dark-400">{activity.detail}</p>
-                      </div>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="animate-pulse flex items-center gap-4">
+                      <div className="h-3 bg-dark-700 rounded w-20" />
+                      <div className="flex-1 h-5 bg-dark-700 rounded-full" />
+                      <div className="h-3 bg-dark-700 rounded w-16" />
                     </div>
-                    <div className="text-right">
-                      {activity.amount && (
-                        <p className={`text-sm font-semibold ${activity.type === "positive" ? "text-emerald-400" : "text-red-400"}`}>
-                          {activity.type === "positive" ? "+" : "-"}{formatAmount(activity.amount, currency)}
-                        </p>
-                      )}
-                      <p className="text-[10px] text-dark-500">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : pipeline.length === 0 ? (
+                <div className="text-center text-dark-500 text-sm py-8">No pipeline data yet</div>
+              ) : (
+                <div className="space-y-4">
+                  {pipeline.map((stage) => {
+                    const maxCount = Math.max(...pipeline.map((s) => s.count), 1);
+                    return (
+                      <div key={stage.stage} className="flex items-center gap-4">
+                        <div className="w-28 text-xs font-medium text-dark-400 shrink-0 capitalize">{stage.stage.replace("_", " ")}</div>
+                        <div className="flex-1 h-7 bg-dark-700/50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                            style={{ width: `${Math.max((stage.count / maxCount) * 100, 2)}%` }}
+                          />
+                        </div>
+                        <div className="text-right shrink-0 w-24">
+                          <span className="text-sm font-semibold text-dark-200">{stage.count}</span>
+                          <span className="text-xs text-dark-400 ml-1">· {formatAmount(stage.value, currency)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -170,44 +172,33 @@ export function ReportsPage() {
               <h3 className="font-semibold text-dark-100">Lead Sources</h3>
             </CardHeader>
             <CardContent className="space-y-4">
-              {leadSources.map((source) => (
-                <div key={source.source} className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-dark-200">{source.source}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-dark-400">{source.count}</span>
-                      <span className="text-xs text-dark-500">{source.percentage}%</span>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="animate-pulse space-y-1.5">
+                      <div className="flex justify-between"><div className="h-3 bg-dark-700 rounded w-20" /><div className="h-3 bg-dark-700 rounded w-10" /></div>
+                      <div className="h-2 bg-dark-700 rounded-full" />
                     </div>
-                  </div>
-                  <div className="h-2 bg-dark-700/50 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${source.color} transition-all duration-500`} style={{ width: `${source.percentage}%` }} />
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <h3 className="font-semibold text-dark-100">Top Agents</h3>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-dark-700/50">
-                {topAgents.map((agent, i) => (
-                  <div key={i} className="flex items-center justify-between px-6 py-3 hover:bg-dark-700/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-gold-500/10 flex items-center justify-center text-sm font-semibold text-gold-400">
-                        {agent.avatar}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-dark-100">{agent.name}</p>
-                        <p className="text-xs text-dark-400">{agent.deals} deals</p>
+              ) : leadSourcesArray.length === 0 ? (
+                <div className="text-center text-dark-500 text-sm py-8">No lead data yet</div>
+              ) : (
+                leadSourcesArray.map((source) => (
+                  <div key={source.source} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-dark-200">{source.source}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-dark-400">{source.count}</span>
+                        <span className="text-xs text-dark-500">{source.percentage}%</span>
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-gold-400">{formatAmount(agent.revenue, currency)}</span>
+                    <div className="h-2 bg-dark-700/50 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-brand-500 transition-all duration-500" style={{ width: `${source.percentage}%` }} />
+                    </div>
                   </div>
-                ))}
-              </div>
+                ))
+              )}
             </CardContent>
           </Card>
 
@@ -216,24 +207,46 @@ export function ReportsPage() {
               <h3 className="font-semibold text-dark-100">Performance Metrics</h3>
             </CardHeader>
             <CardContent className="space-y-4">
-              {[
-                { label: "Avg Days to Close", value: "42 days", trend: "down", change: "-5 days" },
-                { label: "Avg Deal Size", value: formatAmount(377794, currency), trend: "up", change: "+8.2%" },
-                { label: "Client Satisfaction", value: "4.8/5.0", trend: "up", change: "+0.3" },
-                { label: "Repeat Client Rate", value: "32%", trend: "up", change: "+4%" },
-                { label: "Lead Response Time", value: "2.4 hours", trend: "down", change: "-0.8h" },
-              ].map((metric) => (
-                <div key={metric.label} className="flex items-center justify-between">
-                  <span className="text-sm text-dark-300">{metric.label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-dark-100">{metric.value}</span>
-                    <span className={`text-xs ${metric.trend === "down" && metric.label.includes("Time") || metric.label.includes("Days") ? "text-emerald-400" : metric.trend === "up" ? "text-emerald-400" : "text-red-400"}`}>
-                      {metric.trend === "up" ? <ArrowUpRight className="h-3 w-3 inline" /> : <ArrowDownRight className="h-3 w-3 inline" />}
-                      {metric.change}
-                    </span>
-                  </div>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="animate-pulse flex justify-between">
+                      <div className="h-3 bg-dark-700 rounded w-32" />
+                      <div className="h-3 bg-dark-700 rounded w-16" />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : performance ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-dark-300">Avg Days to Close</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-dark-100">{performance.avg_days_to_close} days</span>
+                      <ArrowDownRight className="h-3 w-3 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-dark-300">Avg Deal Size</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-dark-100">{formatAmount(performance.avg_deal_size, currency)}</span>
+                      <ArrowUpRight className="h-3 w-3 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-dark-300">Conversion Rate</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-dark-100">{performance.conversion_rate}%</span>
+                      <ArrowUpRight className="h-3 w-3 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-dark-300">Total Leads</span>
+                    <span className="text-sm font-semibold text-dark-100">{performance.total_leads}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-dark-500 text-sm py-8">No performance data yet</div>
+              )}
             </CardContent>
           </Card>
         </div>

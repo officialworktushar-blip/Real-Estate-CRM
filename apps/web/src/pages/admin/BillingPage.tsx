@@ -1,71 +1,44 @@
-import { useState } from "react";
 import {
   DollarSign,
   TrendingUp,
-  CreditCard,
-  Download,
   CheckCircle2,
   XCircle,
-  Clock,
+  Download,
   Receipt,
-  ArrowUpRight,
-  ArrowDownRight,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { StatsCardSkeleton } from "@/components/common/Skeleton";
+import { useAdminBilling } from "@/hooks/useAdmin";
 import { formatAmount } from "@/utils/currency";
 import { useCurrencyStore } from "@/stores/currencyStore";
-
-const monthlyRevenue = [
-  { month: "Jan", value: 98000 },
-  { month: "Feb", value: 105000 },
-  { month: "Mar", value: 112000 },
-  { month: "Apr", value: 98000 },
-  { month: "May", value: 118000 },
-  { month: "Jun", value: 122000 },
-  { month: "Jul", value: 128450 },
-];
-
-const maxRevenue = Math.max(...monthlyRevenue.map((m) => m.value));
-
-const recentPayments = [
-  { id: "1", user: "Alex Thompson", email: "alex@realty.com", amount: 49, plan: "Professional", provider: "Stripe", status: "succeeded", date: "2026-07-25", invoiceId: "INV-2026-001" },
-  { id: "2", user: "Priya Sharma", email: "priya@homes.in", amount: 149, plan: "Enterprise", provider: "Razorpay", status: "succeeded", date: "2026-07-24", invoiceId: "INV-2026-002" },
-  { id: "3", user: "Marcus Johnson", email: "marcus@estate.com", amount: 19, plan: "Starter", provider: "Stripe", status: "succeeded", date: "2026-07-24", invoiceId: "INV-2026-003" },
-  { id: "4", user: "Aisha Khan", email: "aisha@estate.pk", amount: 19, plan: "Starter", provider: "Razorpay", status: "failed", date: "2026-07-23", invoiceId: "INV-2026-004" },
-  { id: "5", user: "David Lee", email: "david@property.com", amount: 149, plan: "Enterprise", provider: "Stripe", status: "succeeded", date: "2026-07-22", invoiceId: "INV-2026-005" },
-  { id: "6", user: "Tom Chen", email: "tom@homes.com", amount: 49, plan: "Professional", provider: "Stripe", status: "succeeded", date: "2026-07-21", invoiceId: "INV-2026-006" },
-  { id: "7", user: "Sofia Garcia", email: "sofia@realty.mx", amount: 19, plan: "Starter", provider: "Stripe", status: "refunded", date: "2026-07-20", invoiceId: "INV-2026-007" },
-  { id: "8", user: "Chen Wei", email: "chen@homes.cn", amount: 149, plan: "Enterprise", provider: "Razorpay", status: "succeeded", date: "2026-07-19", invoiceId: "INV-2026-008" },
-  { id: "9", user: "Maria Rodriguez", email: "maria@realty.com", amount: 49, plan: "Professional", provider: "Stripe", status: "succeeded", date: "2026-07-18", invoiceId: "INV-2026-009" },
-  { id: "10", user: "Raj Patel", email: "raj@build.in", amount: 149, plan: "Enterprise", provider: "Razorpay", status: "succeeded", date: "2026-07-17", invoiceId: "INV-2026-010" },
-];
 
 const paymentStatusConfig: Record<string, { label: string; variant: string; icon: React.ReactNode }> = {
   succeeded: { label: "Paid", variant: "success", icon: <CheckCircle2 className="h-3 w-3" /> },
   failed: { label: "Failed", variant: "danger", icon: <XCircle className="h-3 w-3" /> },
-  refunded: { label: "Refunded", variant: "warning", icon: <ArrowDownRight className="h-3 w-3" /> },
-  pending: { label: "Pending", variant: "default", icon: <Clock className="h-3 w-3" /> },
+  refunded: { label: "Refunded", variant: "warning", icon: <XCircle className="h-3 w-3" /> },
+  pending: { label: "Pending", variant: "default", icon: <XCircle className="h-3 w-3" /> },
 };
 
 export function BillingPage() {
   const { currency } = useCurrencyStore();
-  const [isLoading] = useState(false);
-  const [period, setPeriod] = useState<"monthly" | "quarterly" | "yearly">("monthly");
+  const { records, revenue, isLoading, error } = useAdminBilling();
 
-  const totalRevenue = monthlyRevenue.reduce((sum, m) => sum + m.value, 0);
-  const succeededPayments = recentPayments.filter((p) => p.status === "succeeded").length;
-  const failedPayments = recentPayments.filter((p) => p.status === "failed").length;
+  const totalRevenue = revenue.reduce((sum, m) => sum + m.total, 0);
+  const succeededPayments = records.filter((r) => r.status === "succeeded").length;
+  const failedPayments = records.filter((r) => r.status === "failed").length;
+  const latestMonth = revenue.length > 0 ? revenue[revenue.length - 1] : null;
 
   const billingStats: { title: string; value: string | number; change: string; changeType: "positive" | "negative" | "neutral"; icon: React.ReactNode }[] = [
-    { title: "Total Revenue (YTD)", value: formatAmount(totalRevenue, currency), change: "+18.2% vs last year", changeType: "positive", icon: <DollarSign className="h-6 w-6" /> },
-    { title: "Monthly Revenue", value: formatAmount(128450, currency), change: "+5.3% vs last month", changeType: "positive", icon: <TrendingUp className="h-6 w-6" /> },
-    { title: "Successful Payments", value: `${succeededPayments}`, change: `${recentPayments.length} total`, changeType: "positive", icon: <CheckCircle2 className="h-6 w-6" /> },
+    { title: "Total Revenue (YTD)", value: formatAmount(totalRevenue, currency), change: `${revenue.length} months`, changeType: "positive", icon: <DollarSign className="h-6 w-6" /> },
+    { title: "Monthly Revenue", value: latestMonth ? formatAmount(latestMonth.total, currency) : "—", change: "Latest month", changeType: "positive", icon: <TrendingUp className="h-6 w-6" /> },
+    { title: "Successful Payments", value: `${succeededPayments}`, change: `${records.length} total`, changeType: "positive", icon: <CheckCircle2 className="h-6 w-6" /> },
     { title: "Failed Payments", value: `${failedPayments}`, change: "Needs attention", changeType: failedPayments > 0 ? "negative" : "neutral", icon: <XCircle className="h-6 w-6" /> },
   ];
+
+  const maxRevenue = Math.max(...revenue.map((m) => m.total), 1);
 
   return (
     <div className="space-y-6">
@@ -74,22 +47,17 @@ export function BillingPage() {
           <h1 className="text-2xl font-bold text-dark-100">Billing</h1>
           <p className="text-sm text-dark-400 mt-1">Revenue overview and payment history</p>
         </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as typeof period)}
-            className="bg-dark-800 border border-dark-700 text-dark-200 text-sm rounded-lg px-3 py-2 focus:border-gold-500 focus:ring-gold-500/20"
-          >
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="yearly">Yearly</option>
-          </select>
-          <Button variant="secondary">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-        </div>
+        <Button variant="secondary">
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading
@@ -105,22 +73,34 @@ export function BillingPage() {
                 <h3 className="font-semibold text-dark-100">Revenue Overview</h3>
                 <div className="flex items-center gap-1 text-emerald-400 text-sm">
                   <TrendingUp className="h-4 w-4" />
-                  <span>+18.2%</span>
+                  <span>{revenue.length} months</span>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-end gap-2 h-48">
-                {monthlyRevenue.map((m) => (
-                  <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[10px] text-dark-400">{formatAmount(m.value, currency)}</span>
-                    <div className="w-full bg-gold-500/20 rounded-t-md relative" style={{ height: `${(m.value / maxRevenue) * 140}px` }}>
-                      <div className="absolute inset-0 bg-gold-500 rounded-t-md opacity-80 hover:opacity-100 transition-opacity" />
+              {isLoading ? (
+                <div className="flex items-end gap-2 h-48">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <div key={i} className="flex-1 animate-pulse">
+                      <div className="bg-dark-700 rounded-t-md" style={{ height: `${Math.random() * 120 + 20}px` }} />
                     </div>
-                    <span className="text-xs text-dark-400">{m.month}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : revenue.length === 0 ? (
+                <div className="flex items-center justify-center h-48 text-dark-500 text-sm">No revenue data yet</div>
+              ) : (
+                <div className="flex items-end gap-2 h-48">
+                  {revenue.map((m) => (
+                    <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[10px] text-dark-400">{formatAmount(m.total, currency)}</span>
+                      <div className="w-full bg-gold-500/20 rounded-t-md relative" style={{ height: `${(m.total / maxRevenue) * 140}px` }}>
+                        <div className="absolute inset-0 bg-gold-500 rounded-t-md opacity-80 hover:opacity-100 transition-opacity" />
+                      </div>
+                      <span className="text-xs text-dark-400">{m.month}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -128,49 +108,51 @@ export function BillingPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-dark-100">Revenue Breakdown</h3>
+              <h3 className="font-semibold text-dark-100">Revenue by Provider</h3>
             </CardHeader>
             <CardContent className="space-y-4">
-              {[
-                { label: "Stripe Revenue", value: 89200, percentage: 69.4, color: "bg-purple-500" },
-                { label: "Razorpay Revenue", value: 39250, percentage: 30.6, color: "bg-blue-500" },
-              ].map((item) => (
-                <div key={item.label} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-dark-200">{item.label}</span>
-                    <span className="text-sm font-semibold text-gold-400">{formatAmount(item.value, currency)}</span>
-                  </div>
-                  <div className="h-2 bg-dark-700/50 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${item.color} transition-all duration-500`}
-                      style={{ width: `${item.percentage}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-dark-500">{item.percentage}%</span>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="animate-pulse space-y-2">
+                      <div className="flex justify-between"><div className="h-3 bg-dark-700 rounded w-24" /><div className="h-3 bg-dark-700 rounded w-16" /></div>
+                      <div className="h-2 bg-dark-700 rounded-full" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <h3 className="font-semibold text-dark-100">Plan Revenue</h3>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { plan: "Starter", count: 412, revenue: 7828, color: "bg-dark-500" },
-                { plan: "Professional", count: 328, revenue: 16072, color: "bg-brand-500" },
-                { plan: "Enterprise", count: 152, revenue: 22648, color: "bg-gold-500" },
-              ].map((p) => (
-                <div key={p.plan} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${p.color}`} />
-                    <span className="text-sm text-dark-300">{p.plan}</span>
-                    <span className="text-xs text-dark-500">({p.count})</span>
-                  </div>
-                  <span className="text-sm font-semibold text-dark-200">{formatAmount(p.revenue, currency)}</span>
-                </div>
-              ))}
+              ) : (
+                <>
+                  {(() => {
+                    const stripeTotal = revenue.reduce((sum, m) => sum + m.stripe, 0);
+                    const razorpayTotal = revenue.reduce((sum, m) => sum + m.razorpay, 0);
+                    const grandTotal = stripeTotal + razorpayTotal || 1;
+                    return (
+                      <>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-dark-200">Stripe Revenue</span>
+                            <span className="text-sm font-semibold text-gold-400">{formatAmount(stripeTotal, currency)}</span>
+                          </div>
+                          <div className="h-2 bg-dark-700/50 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-purple-500 transition-all duration-500" style={{ width: `${(stripeTotal / grandTotal) * 100}%` }} />
+                          </div>
+                          <span className="text-[10px] text-dark-500">{Math.round((stripeTotal / grandTotal) * 100)}%</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-dark-200">Razorpay Revenue</span>
+                            <span className="text-sm font-semibold text-gold-400">{formatAmount(razorpayTotal, currency)}</span>
+                          </div>
+                          <div className="h-2 bg-dark-700/50 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${(razorpayTotal / grandTotal) * 100}%` }} />
+                          </div>
+                          <span className="text-[10px] text-dark-500">{Math.round((razorpayTotal / grandTotal) * 100)}%</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -190,9 +172,7 @@ export function BillingPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-dark-700">
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider">Invoice</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider">User</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden md:table-cell">Plan</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden md:table-cell">Provider</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider">Amount</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden lg:table-cell">Date</th>
@@ -200,38 +180,61 @@ export function BillingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-700/50">
-              {recentPayments.map((payment) => (
-                <tr key={payment.id} className="hover:bg-dark-700/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <span className="text-xs font-mono text-dark-300">{payment.invoiceId}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-dark-100 truncate">{payment.user}</p>
-                      <p className="text-xs text-dark-400 truncate">{payment.email}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <Badge variant="default">{payment.plan}</Badge>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <Badge variant={payment.provider === "Stripe" ? "info" : "warning"}>{payment.provider}</Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-sm font-semibold ${payment.status === "refunded" ? "text-amber-400" : payment.status === "failed" ? "text-red-400" : "text-emerald-400"}`}>
-                      {payment.status === "refunded" ? "-" : ""}{formatAmount(payment.amount, currency)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    <span className="text-xs text-dark-400">{payment.date}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant={paymentStatusConfig[payment.status].variant as any}>
-                      <span className="flex items-center gap-1">{paymentStatusConfig[payment.status].icon}{paymentStatusConfig[payment.status].label}</span>
-                    </Badge>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={5} className="px-4 py-3">
+                      <div className="animate-pulse flex items-center gap-3">
+                        <div className="h-8 w-8 bg-dark-700 rounded" />
+                        <div className="space-y-1 flex-1">
+                          <div className="h-3 bg-dark-700 rounded w-32" />
+                          <div className="h-2 bg-dark-700 rounded w-24" />
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : records.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-dark-500 text-sm">
+                    No payment records yet.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                records.map((payment) => (
+                  <tr key={payment.id} className="hover:bg-dark-700/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-dark-100 truncate">{payment.profiles?.full_name || "Unknown"}</p>
+                        <p className="text-xs text-dark-400 truncate">{payment.profiles?.email || ""}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <Badge variant={payment.billing_provider === "razorpay" ? "info" : "warning"}>
+                        {payment.billing_provider || "stripe"}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-sm font-semibold ${
+                        payment.status === "refunded" ? "text-amber-400" : payment.status === "failed" ? "text-red-400" : "text-emerald-400"
+                      }`}>
+                        {payment.status === "refunded" ? "-" : ""}{formatAmount(payment.amount, currency)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <span className="text-xs text-dark-400">{new Date(payment.created_at).toLocaleDateString()}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={(paymentStatusConfig[payment.status]?.variant || "default") as any}>
+                        <span className="flex items-center gap-1">
+                          {paymentStatusConfig[payment.status]?.icon}
+                          {paymentStatusConfig[payment.status]?.label || payment.status}
+                        </span>
+                      </Badge>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </CardContent>

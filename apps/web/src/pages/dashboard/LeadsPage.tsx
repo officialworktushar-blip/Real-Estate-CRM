@@ -7,36 +7,18 @@ import {
   MoreHorizontal,
   Phone,
   Mail,
-  DollarSign,
   MapPin,
   Star,
-  Filter,
-  SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent } from "@/components/common/Card";
 import { TableRowSkeleton } from "@/components/common/Skeleton";
-import { formatCurrency, formatDate } from "@/utils/helpers";
+import { useLeads } from "@/hooks/useLeads";
 
 type LeadStatus = "new" | "contacted" | "qualified" | "negotiation" | "closed" | "lost";
 type ViewMode = "table" | "kanban";
-
-const dummyLeads = [
-  { id: "1", name: "Sarah Mitchell", email: "sarah.m@email.com", phone: "(310) 555-0142", source: "Website", status: "new" as LeadStatus, budget: 450000, location: "Beverly Hills", interest: "Single Family", rating: 4, created_at: "2026-07-25", notes: "Looking for 3+ bed, prefers modern style" },
-  { id: "2", name: "James Rodriguez", email: "james.r@email.com", phone: "(213) 555-0198", source: "Referral", status: "qualified" as LeadStatus, budget: 720000, location: "Santa Monica", interest: "Condo", rating: 5, created_at: "2026-07-24", notes: "Pre-approved for $750K, wants ocean view" },
-  { id: "3", name: "Emily Chen", email: "emily.c@email.com", phone: "(424) 555-0211", source: "Zillow", status: "contacted" as LeadStatus, budget: 380000, location: "Pasadena", interest: "Townhouse", rating: 3, created_at: "2026-07-23", notes: "First-time buyer, needs guidance on process" },
-  { id: "4", name: "Michael Brown", email: "michael.b@email.com", phone: "(323) 555-0177", source: "Social Media", status: "new" as LeadStatus, budget: 550000, location: "West Hollywood", interest: "Condo", rating: 3, created_at: "2026-07-22", notes: "Inquired via Instagram DM" },
-  { id: "5", name: "Lisa Anderson", email: "lisa.a@email.com", phone: "(818) 555-0133", source: "Open House", status: "negotiation" as LeadStatus, budget: 620000, location: "Glendale", interest: "Single Family", rating: 5, created_at: "2026-07-21", notes: "Very interested in 456 Oak Lane, wants to negotiate price" },
-  { id: "6", name: "David Kim", email: "david.k@email.com", phone: "(310) 555-0155", source: "Website", status: "qualified" as LeadStatus, budget: 890000, location: "Manhattan Beach", interest: "Single Family", rating: 4, created_at: "2026-07-20", notes: "Relocating from Seattle, needs quick timeline" },
-  { id: "7", name: "Rachel Taylor", email: "rachel.t@email.com", phone: "(213) 555-0188", source: "Referral", status: "contacted" as LeadStatus, budget: 320000, location: "Koreatown", interest: "Condo", rating: 3, created_at: "2026-07-19", notes: "Investment property, looking for rental yield" },
-  { id: "8", name: "Carlos Gutierrez", email: "carlos.g@email.com", phone: "(424) 555-0166", source: "Social Media", status: "new" as LeadStatus, budget: 475000, location: "Echo Park", interest: "Townhouse", rating: 4, created_at: "2026-07-18", notes: "Saw our TikTok, wants modern loft-style" },
-  { id: "9", name: "Amanda White", email: "amanda.w@email.com", phone: "(323) 555-0144", source: "Zillow", status: "lost" as LeadStatus, budget: 290000, location: "Silver Lake", interest: "Studio", rating: 2, created_at: "2026-07-17", notes: "Went with another agent" },
-  { id: "10", name: "Kevin Nguyen", email: "kevin.n@email.com", phone: "(818) 555-0122", source: "Open House", status: "closed" as LeadStatus, budget: 510000, location: "Burbank", interest: "Condo", rating: 5, created_at: "2026-07-15", notes: "Successfully closed on 789 Maple Dr" },
-  { id: "11", name: "Jennifer Lee", email: "jennifer.l@email.com", phone: "(310) 555-0199", source: "Website", status: "new" as LeadStatus, budget: 680000, location: "Venice", interest: "Single Family", rating: 4, created_at: "2026-07-26", notes: "Looking for beach proximity" },
-  { id: "12", name: "Robert Garcia", email: "robert.g@email.com", phone: "(213) 555-0155", source: "Referral", status: "qualified" as LeadStatus, budget: 950000, location: "Malibu", interest: "Single Family", rating: 5, created_at: "2026-07-25", notes: "Cash buyer, looking for luxury property" },
-];
 
 const statusConfig: Record<LeadStatus, { label: string; variant: string }> = {
   new: { label: "New", variant: "info" },
@@ -50,19 +32,16 @@ const statusConfig: Record<LeadStatus, { label: string; variant: string }> = {
 const kanbanColumns: LeadStatus[] = ["new", "contacted", "qualified", "negotiation", "closed", "lost"];
 
 export function LeadsPage() {
-  const [isLoading] = useState(false);
+  const { leads, isLoading, search, setSearch, error } = useLeads();
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
 
-  const filteredLeads = dummyLeads.filter((lead) => {
-    const matchesSearch =
-      lead.name.toLowerCase().includes(search.toLowerCase()) ||
-      lead.email.toLowerCase().includes(search.toLowerCase()) ||
-      lead.location.toLowerCase().includes(search.toLowerCase());
+  const filteredLeads = leads.filter((lead) => {
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
+
+  const getLeadName = (lead: typeof leads[0]) => `${lead.first_name} ${lead.last_name}`;
 
   return (
     <div className="space-y-6">
@@ -76,6 +55,12 @@ export function LeadsPage() {
           Add Lead
         </Button>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="relative flex-1 w-full sm:max-w-md">
@@ -133,48 +118,63 @@ export function LeadsPage() {
               <tbody className="divide-y divide-dark-700/50">
                 {isLoading
                   ? Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} cols={7} />)
+                  : filteredLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-12 text-center text-dark-500 text-sm">
+                          {search ? "No leads match your search." : "No leads yet. Add your first lead to get started."}
+                        </td>
+                      </tr>
+                    )
                   : filteredLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-dark-700/30 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="h-9 w-9 rounded-full bg-gold-500/10 flex items-center justify-center text-sm font-semibold text-gold-400 shrink-0">
-                              {lead.name.charAt(0)}
+                              {getLeadName(lead).charAt(0)}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-dark-100 truncate">{lead.name}</p>
-                              <p className="text-xs text-dark-400 truncate">{lead.interest}</p>
+                              <p className="text-sm font-medium text-dark-100 truncate">{getLeadName(lead)}</p>
+                              <p className="text-xs text-dark-400 truncate">{lead.preferred_location || lead.source}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           <div className="space-y-1">
-                            <p className="text-xs text-dark-300 truncate max-w-[180px]">{lead.email}</p>
-                            <p className="text-xs text-dark-400">{lead.phone}</p>
+                            <p className="text-xs text-dark-300 truncate max-w-[180px]">{lead.email || "—"}</p>
+                            <p className="text-xs text-dark-400">{lead.phone || "—"}</p>
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3 text-dark-500" />
-                            <span className="text-sm text-dark-300">{lead.location}</span>
+                            <span className="text-sm text-dark-300">{lead.preferred_location || "—"}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <span className="text-sm font-medium text-dark-200">{formatCurrency(lead.budget)}</span>
+                          <span className="text-sm font-medium text-dark-200">
+                            {lead.budget_min || lead.budget_max ? `$${(lead.budget_min || 0).toLocaleString()} - $${(lead.budget_max || 0).toLocaleString()}` : "—"}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant={statusConfig[lead.status].variant as any}>{statusConfig[lead.status].label}</Badge>
+                          <Badge variant={(statusConfig[lead.status as LeadStatus]?.variant || "default") as any}>
+                            {statusConfig[lead.status as LeadStatus]?.label || lead.status}
+                          </Badge>
                         </td>
                         <td className="px-4 py-3 hidden xl:table-cell">
                           <span className="text-sm text-dark-400">{lead.source}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
-                              <Phone className="h-4 w-4" />
-                            </button>
-                            <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
-                              <Mail className="h-4 w-4" />
-                            </button>
+                            {lead.phone && (
+                              <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
+                                <Phone className="h-4 w-4" />
+                              </button>
+                            )}
+                            {lead.email && (
+                              <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
+                                <Mail className="h-4 w-4" />
+                              </button>
+                            )}
                             <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
                               <MoreHorizontal className="h-4 w-4" />
                             </button>
@@ -201,17 +201,16 @@ export function LeadsPage() {
                 <div className="space-y-2">
                   {colLeads.map((lead) => (
                     <div key={lead.id} className="bg-dark-800 border border-dark-700 rounded-lg p-3 hover:border-dark-600 transition-colors cursor-pointer">
-                      <p className="text-sm font-medium text-dark-100 truncate">{lead.name}</p>
-                      <p className="text-xs text-dark-400 mt-1">{lead.location}</p>
+                      <p className="text-sm font-medium text-dark-100 truncate">{getLeadName(lead)}</p>
+                      <p className="text-xs text-dark-400 mt-1">{lead.preferred_location || lead.source}</p>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs font-medium text-gold-400">{formatCurrency(lead.budget)}</span>
-                        <div className="flex items-center gap-0.5">
-                          {Array.from({ length: lead.rating }).map((_, i) => (
-                            <Star key={i} className="h-2.5 w-2.5 fill-gold-400 text-gold-400" />
-                          ))}
-                        </div>
+                        <span className="text-xs font-medium text-gold-400">
+                          {lead.budget_max ? `$${lead.budget_max.toLocaleString()}` : "—"}
+                        </span>
                       </div>
-                      <p className="text-[10px] text-dark-500 mt-2 truncate">{lead.notes}</p>
+                      {lead.notes && (
+                        <p className="text-[10px] text-dark-500 mt-2 truncate">{lead.notes}</p>
+                      )}
                     </div>
                   ))}
                 </div>
