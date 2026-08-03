@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -5,31 +6,94 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AdminRoute } from "./AdminRoute";
 import { GuestGuard } from "./GuestGuard";
+import { PageLoader } from "@/components/common/PageLoader";
 
-import { LoginPage } from "@/pages/auth/LoginPage";
-import { RegisterPage } from "@/pages/auth/RegisterPage";
-import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
+const LoginPage = lazy(() =>
+  import("@/pages/auth/LoginPage").then((m) => ({ default: m.LoginPage }))
+);
+const RegisterPage = lazy(() =>
+  import("@/pages/auth/RegisterPage").then((m) => ({ default: m.RegisterPage }))
+);
+const ForgotPasswordPage = lazy(() =>
+  import("@/pages/auth/ForgotPasswordPage").then((m) => ({
+    default: m.ForgotPasswordPage,
+  }))
+);
 
-import { DashboardPage } from "@/pages/dashboard/DashboardPage";
-import { LeadsPage } from "@/pages/dashboard/LeadsPage";
-import { PropertiesPage } from "@/pages/dashboard/PropertiesPage";
-import { ClientsPage } from "@/pages/dashboard/ClientsPage";
-import { DealsPage } from "@/pages/dashboard/DealsPage";
-import { CalendarPage } from "@/pages/dashboard/CalendarPage";
-import { ReportsPage } from "@/pages/dashboard/ReportsPage";
-import { SettingsPage } from "@/pages/dashboard/SettingsPage";
+const DashboardPage = lazy(() =>
+  import("@/pages/dashboard/DashboardPage").then((m) => ({
+    default: m.DashboardPage,
+  }))
+);
+const LeadsPage = lazy(() =>
+  import("@/pages/dashboard/LeadsPage").then((m) => ({ default: m.LeadsPage }))
+);
+const PropertiesPage = lazy(() =>
+  import("@/pages/dashboard/PropertiesPage").then((m) => ({
+    default: m.PropertiesPage,
+  }))
+);
+const ClientsPage = lazy(() =>
+  import("@/pages/dashboard/ClientsPage").then((m) => ({
+    default: m.ClientsPage,
+  }))
+);
+const DealsPage = lazy(() =>
+  import("@/pages/dashboard/DealsPage").then((m) => ({ default: m.DealsPage }))
+);
+const CalendarPage = lazy(() =>
+  import("@/pages/dashboard/CalendarPage").then((m) => ({
+    default: m.CalendarPage,
+  }))
+);
+const ReportsPage = lazy(() =>
+  import("@/pages/dashboard/ReportsPage").then((m) => ({
+    default: m.ReportsPage,
+  }))
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/dashboard/SettingsPage").then((m) => ({
+    default: m.SettingsPage,
+  }))
+);
 
-import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
-import { UsersPage } from "@/pages/admin/UsersPage";
-import { SubscriptionsPage } from "@/pages/admin/SubscriptionsPage";
-import { SystemSettingsPage } from "@/pages/admin/SystemSettingsPage";
-import { AuditLogsPage } from "@/pages/admin/AuditLogsPage";
-import { BillingPage } from "@/pages/admin/BillingPage";
+const AdminDashboardPage = lazy(() =>
+  import("@/pages/admin/AdminDashboardPage").then((m) => ({
+    default: m.AdminDashboardPage,
+  }))
+);
+const UsersPage = lazy(() =>
+  import("@/pages/admin/UsersPage").then((m) => ({ default: m.UsersPage }))
+);
+const SubscriptionsPage = lazy(() =>
+  import("@/pages/admin/SubscriptionsPage").then((m) => ({
+    default: m.SubscriptionsPage,
+  }))
+);
+const SystemSettingsPage = lazy(() =>
+  import("@/pages/admin/SystemSettingsPage").then((m) => ({
+    default: m.SystemSettingsPage,
+  }))
+);
+const AuditLogsPage = lazy(() =>
+  import("@/pages/admin/AuditLogsPage").then((m) => ({
+    default: m.AuditLogsPage,
+  }))
+);
+const BillingPage = lazy(() =>
+  import("@/pages/admin/BillingPage").then((m) => ({ default: m.BillingPage }))
+);
 
 export function AppRoutes() {
   return (
     <Routes>
-      <Route element={<AuthLayout />}>
+      <Route
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <AuthLayout />
+          </Suspense>
+        }
+      >
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
@@ -43,14 +107,70 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<DashboardPage />} />
-        <Route path="leads" element={<LeadsPage />} />
-        <Route path="properties" element={<PropertiesPage />} />
-        <Route path="clients" element={<ClientsPage />} />
-        <Route path="deals" element={<DealsPage />} />
-        <Route path="calendar" element={<CalendarPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route
+          index
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <DashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="leads"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="properties"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <PropertiesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="clients"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="deals"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <DealsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="calendar"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CalendarPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -61,13 +181,29 @@ export function AppRoutes() {
           </AdminRoute>
         }
       >
-        <Route index element={<AdminDashboardPage />} />
-        <Route path="users" element={<UsersPage />} />
+        <Route
+          index
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AdminDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="users"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <UsersPage />
+            </Suspense>
+          }
+        />
         <Route
           path="subscriptions"
           element={
             <GuestGuard>
-              <SubscriptionsPage />
+              <Suspense fallback={<PageLoader />}>
+                <SubscriptionsPage />
+              </Suspense>
             </GuestGuard>
           }
         />
@@ -75,12 +211,28 @@ export function AppRoutes() {
           path="billing"
           element={
             <GuestGuard>
-              <BillingPage />
+              <Suspense fallback={<PageLoader />}>
+                <BillingPage />
+              </Suspense>
             </GuestGuard>
           }
         />
-        <Route path="settings" element={<SystemSettingsPage />} />
-        <Route path="audit-logs" element={<AuditLogsPage />} />
+        <Route
+          path="settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SystemSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="audit-logs"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AuditLogsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
