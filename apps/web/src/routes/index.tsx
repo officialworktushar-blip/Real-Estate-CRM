@@ -5,7 +5,6 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AdminRoute } from "./AdminRoute";
-import { GuestGuard } from "./GuestGuard";
 import { PageLoader } from "@/components/common/PageLoader";
 
 const LoginPage = lazy(() =>
@@ -200,21 +199,17 @@ export function AppRoutes() {
         <Route
           path="subscriptions"
           element={
-            <GuestGuard>
-              <Suspense fallback={<PageLoader />}>
-                <SubscriptionsPage />
-              </Suspense>
-            </GuestGuard>
+            <Suspense fallback={<PageLoader />}>
+              <SubscriptionsPage />
+            </Suspense>
           }
         />
         <Route
           path="billing"
           element={
-            <GuestGuard>
-              <Suspense fallback={<PageLoader />}>
-                <BillingPage />
-              </Suspense>
-            </GuestGuard>
+            <Suspense fallback={<PageLoader />}>
+              <BillingPage />
+            </Suspense>
           }
         />
         <Route
