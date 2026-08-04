@@ -30,9 +30,19 @@ export function RegisterPage() {
     setSuccess("");
     setLoading(true);
     try {
-      await register(fullName, email, password);
-      setSuccess("Account created! Redirecting to login...");
-      setTimeout(() => navigate("/auth/login"), 1500);
+      const { signedIn } = await register(fullName, email, password);
+      setSuccess("Account created successfully. You can now sign in.");
+      setTimeout(() => {
+        if (signedIn) {
+          navigate("/dashboard");
+        } else {
+          navigate(
+            `/auth/login?message=${encodeURIComponent(
+              "Account created successfully. You can now sign in."
+            )}`
+          );
+        }
+      }, 1200);
     } catch (err) {
       setError(friendlyError(err));
     } finally {

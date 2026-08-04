@@ -67,9 +67,7 @@ export function useAuth() {
           case "Invalid login credentials":
             throw new Error("Invalid email or password. Please try again.");
           case "Email not confirmed":
-            throw new Error(
-              "Please confirm your email address before signing in."
-            );
+            throw new Error("Invalid email or password. Please try again.");
           case "Too many requests":
             throw new Error(
               "Too many login attempts. Please wait a moment and try again."
@@ -134,16 +132,26 @@ export function useAuth() {
         }
       }
 
-      if (data.user) {
-        if (data.session) {
-          localStorage.setItem("access_token", data.session.access_token);
-          setUser(mapSupabaseUser(data.user));
-        }
+      if (data.session) {
+        localStorage.setItem("access_token", data.session.access_token);
+        setUser(mapSupabaseUser(data.user));
+        exitGuestMode();
+        return { signedIn: true };
       }
 
-      return data;
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (!signInError && signInData.session) {
+        localStorage.setItem("access_token", signInData.session.access_token);
+        setUser(mapSupabaseUser(signInData.user));
+        exitGuestMode();
+        return { signedIn: true };
+      }
+
+      return { signedIn: false };
     },
-    [setUser]
+    [setUser, exitGuestMode]
   );
 
   const registerWithGoogle = useCallback(async () => {
