@@ -12,17 +12,55 @@ const GUEST_USER: User = {
   is_guest: true,
 };
 
-function mapSupabaseUser(supabaseUser: any): User {
+interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  role: string;
+  organization_id?: string | null;
+}
+
+async function fetchProfile(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[useAuth] Failed to fetch profile:", error.message);
+    return null;
+  }
+
+  return data as Profile | null;
+}
+
+function mapSupabaseUser(
+  supabaseUser: any,
+  profile: Profile | null = null
+): User {
+  const role: User["role"] =
+    profile?.role === "super_admin" ? "super_admin" : "user";
+
+  console.log("[useAuth] mapSupabaseUser detected role:", role, {
+    email: supabaseUser.email,
+    profileRole: profile?.role,
+  });
+
   return {
     id: supabaseUser.id,
     email: supabaseUser.email ?? "",
     full_name:
-      supabaseUser.user_metadata?.full_name ??
-      supabaseUser.user_metadata?.name ??
-      supabaseUser.email?.split("@")[0] ??
+      profile?.full_name ||
+      supabaseUser.user_metadata?.full_name ||
+      supabaseUser.user_metadata?.name ||
+      supabaseUser.email?.split("@")[0] ||
       "User",
-    avatar_url: supabaseUser.user_metadata?.avatar_url,
-    role: "user",
+    avatar_url:
+      profile?.avatar_url || supabaseUser.user_metadata?.avatar_url,
+    role,
+    organization_id: profile?.organization_id || undefined,
     is_guest: false,
   };
 }
@@ -31,32 +69,45 @@ export function useAuth() {
   const { user, setUser, setLoading } = useAuthStore();
   const { isGuest, enterGuestMode, exitGuestMode } = useGuestStore();
 
+  const applyUser = useCallback(
+    async (supabaseUser: any) => {
+      const profile = await fetchProfile(supabaseUser.id);
+      const mapped = mapSupabaseUser(supabaseUser, profile);
+      console.log("[useAuth] Setting user in store with role:", mapped.role);
+      setUser(mapped);
+    },
+    [setUser]
+  );
+
   useEffect(() => {
     supabase.auth
       .getSession()
-      .then(({ data: { session } }) => {
+      .then(async ({ data: { session } }) => {
         if (session?.user) {
-          setUser(mapSupabaseUser(session.user));
+          await applyUser(session.user);
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
 
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    (_event, session) => {
-      if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
-      } else if (!useGuestStore.getState().isGuest) {
-        setUser(null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          applyUser(session.user);
+        } else if (!useGuestStore.getState().isGuest) {
+          setUser(null);
+        }
       }
-    }
-  );
+    );
 
     return () => subscription.unsubscribe();
-  }, [setUser, setLoading]);
+  }, [applyUser, setUser, setLoading]);
 
   const login = useCallback(
     async (email: string, password: string) => {
+      console.log("[useAuth] Login started, clearing cached user/role");
+      setUser(null);
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -81,10 +132,10 @@ export function useAuth() {
         localStorage.setItem("access_token", data.session.access_token);
       }
       exitGuestMode();
-      setUser(mapSupabaseUser(data.user));
+      await applyUser(data.user);
       return data;
     },
-    [setUser, exitGuestMode]
+    [applyUser, setUser, exitGuestMode]
   );
 
   const loginWithGoogle = useCallback(async () => {
@@ -134,7 +185,7 @@ export function useAuth() {
 
       if (data.session) {
         localStorage.setItem("access_token", data.session.access_token);
-        setUser(mapSupabaseUser(data.user));
+        await applyUser(data.user);
         exitGuestMode();
         return { signedIn: true };
       }
@@ -144,14 +195,14 @@ export function useAuth() {
 
       if (!signInError && signInData.session) {
         localStorage.setItem("access_token", signInData.session.access_token);
-        setUser(mapSupabaseUser(signInData.user));
+        await applyUser(signInData.user);
         exitGuestMode();
         return { signedIn: true };
       }
 
       return { signedIn: false };
     },
-    [setUser, exitGuestMode]
+    [applyUser, exitGuestMode]
   );
 
   const registerWithGoogle = useCallback(async () => {
