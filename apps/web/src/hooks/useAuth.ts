@@ -41,7 +41,9 @@ function mapSupabaseUser(
   profile: Profile | null = null
 ): User {
   const role: User["role"] =
-    profile?.role === "super_admin" ? "super_admin" : "user";
+    profile && (profile.role === "super_admin" || profile.role === "user")
+      ? profile.role
+      : "user";
 
   console.log("[useAuth] mapSupabaseUser detected role:", role, {
     email: supabaseUser.email,
@@ -71,7 +73,11 @@ export function useAuth() {
 
   const applyUser = useCallback(
     async (supabaseUser: any) => {
-      const profile = await fetchProfile(supabaseUser.id);
+      const userId = supabaseUser.id;
+      const profile = await fetchProfile(userId);
+      console.log("User ID:", userId);
+      console.log("Fetched Profile:", profile);
+      console.log("Detected Role:", profile?.role);
       const mapped = mapSupabaseUser(supabaseUser, profile);
       console.log("[useAuth] Setting user in store with role:", mapped.role);
       setUser(mapped);
