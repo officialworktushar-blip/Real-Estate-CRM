@@ -55,7 +55,6 @@ async function ensureOrgAndProfile(
     .upsert(
       {
         id: userId,
-        user_id: userId,
         full_name: opts.full_name || existing?.full_name || "",
         email: opts.email || existing?.email || null,
         org_id: org.id,

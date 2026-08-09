@@ -6,10 +6,10 @@ import { useAppStore } from "@/stores/appStore";
 import { cn } from "@/utils/helpers";
 
 export function DashboardLayout() {
-  const { user, isLoading, isProfileLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
 
-  if (isLoading || isProfileLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-dark-950">
         <div className="flex flex-col items-center gap-4">
