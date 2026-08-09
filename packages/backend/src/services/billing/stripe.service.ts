@@ -36,7 +36,7 @@ export const stripeService = {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("email, full_name, stripe_customer_id")
-      .eq("user_id", userId)
+      .eq("id", userId)
       .single();
 
     if (!profile) throw createAppError("User not found", 404, "USER_NOT_FOUND");
@@ -54,7 +54,7 @@ export const stripeService = {
       await supabaseAdmin
         .from("profiles")
         .update({ stripe_customer_id: customerId })
-        .eq("user_id", userId);
+        .eq("id", userId);
     }
 
     const session = await client.checkout.sessions.create({
@@ -75,7 +75,7 @@ export const stripeService = {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("stripe_customer_id")
-      .eq("user_id", userId)
+      .eq("id", userId)
       .single();
 
     if (!profile?.stripe_customer_id) {
@@ -129,14 +129,14 @@ export const stripeService = {
         const customerId = invoice.customer as string;
         const { data: profile } = await supabaseAdmin
           .from("profiles")
-          .select("user_id")
+          .select("id")
           .eq("stripe_customer_id", customerId)
           .single();
         if (profile) {
           await supabaseAdmin
             .from("subscriptions")
             .update({ status: "active", current_period_end: new Date(invoice.period_end * 1000).toISOString() })
-            .eq("user_id", profile.user_id);
+            .eq("user_id", profile.id);
         }
         break;
       }
@@ -145,14 +145,14 @@ export const stripeService = {
         const customerId = invoice.customer as string;
         const { data: profile } = await supabaseAdmin
           .from("profiles")
-          .select("user_id")
+          .select("id")
           .eq("stripe_customer_id", customerId)
           .single();
         if (profile) {
           await supabaseAdmin
             .from("subscriptions")
             .update({ status: "past_due" })
-            .eq("user_id", profile.user_id);
+            .eq("user_id", profile.id);
         }
         break;
       }

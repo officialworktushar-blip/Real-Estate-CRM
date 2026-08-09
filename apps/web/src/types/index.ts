@@ -4,8 +4,23 @@ export interface User {
   full_name: string;
   avatar_url?: string;
   role: "user" | "super_admin";
-  organization_id?: string;
+  org_id?: string;
   is_guest?: boolean;
+}
+
+export interface Profile {
+  id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  role: string;
+  org_id?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  license_number?: string | null;
+  bio?: string | null;
+  timezone?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AppState {
@@ -66,7 +81,6 @@ export interface Deal {
   title: string;
   stage: string;
   value: number;
-  commission_amount?: number;
   expected_close_date?: string;
   clients?: { first_name: string; last_name: string };
   created_at: string;

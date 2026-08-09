@@ -34,15 +34,17 @@ export function convertCurrency(amountUSD: number, to: CurrencyCode): number {
 }
 
 export function formatAmount(amountUSD: number, currency: CurrencyCode): string {
-  const config = currencies[currency];
-  const converted = convertCurrency(amountUSD, currency);
+  const config = currencies[currency] ?? currencies.USD;
+  const value =
+    typeof amountUSD === "number" && Number.isFinite(amountUSD) ? amountUSD : 0;
+  const converted = convertCurrency(value, config.code);
   return new Intl.NumberFormat(config.locale, {
     style: "currency",
-    currency: currency,
-    maximumFractionDigits: currency === "INR" ? 0 : 0,
+    currency: config.code,
+    maximumFractionDigits: 0,
   }).format(converted);
 }
 
 export function getCurrencySymbol(currency: CurrencyCode): string {
-  return currencies[currency].symbol;
+  return (currencies[currency] ?? currencies.USD).symbol;
 }

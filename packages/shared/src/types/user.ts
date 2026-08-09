@@ -6,7 +6,7 @@ export interface User {
   full_name: string;
   avatar_url?: string;
   role: UserRole;
-  organization_id?: string;
+  org_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -14,6 +14,7 @@ export interface User {
 export interface Profile {
   id: string;
   user_id: string;
+  org_id?: string;
   phone?: string;
   company?: string;
   license_number?: string;

@@ -15,7 +15,7 @@ export const propertiesService = {
     let query = supabaseAdmin
       .from("properties")
       .select("*", { count: "exact" })
-      .eq("organization_id", orgId);
+      .eq("org_id", orgId);
 
     if (search) {
       query = query.or(`title.ilike.%${search}%,address.ilike.%${search}%,city.ilike.%${search}%`);
@@ -38,7 +38,7 @@ export const propertiesService = {
       .from("properties")
       .select("*")
       .eq("id", id)
-      .eq("organization_id", orgId)
+      .eq("org_id", orgId)
       .single();
 
     if (error || !data) throw createAppError("Property not found", 404, "NOT_FOUND");
@@ -48,7 +48,7 @@ export const propertiesService = {
   async create(payload: Record<string, unknown>, orgId: string) {
     const { data, error } = await supabaseAdmin
       .from("properties")
-      .insert({ ...payload, organization_id: orgId })
+      .insert({ ...payload, org_id: orgId })
       .select()
       .single();
 
@@ -61,7 +61,7 @@ export const propertiesService = {
       .from("properties")
       .update({ ...payload, updated_at: new Date().toISOString() })
       .eq("id", id)
-      .eq("organization_id", orgId)
+      .eq("org_id", orgId)
       .select()
       .single();
 
@@ -74,7 +74,7 @@ export const propertiesService = {
       .from("properties")
       .delete()
       .eq("id", id)
-      .eq("organization_id", orgId);
+      .eq("org_id", orgId);
 
     if (error) throw createAppError(error.message, 400, "DELETE_FAILED");
   },

@@ -1,7 +1,7 @@
 -- Create properties table
 CREATE TABLE properties (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
   address TEXT NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE properties (
 
 ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX idx_properties_organization ON properties(organization_id);
+CREATE INDEX idx_properties_organization ON properties(org_id);
 CREATE INDEX idx_properties_status ON properties(status);
 CREATE INDEX idx_properties_city ON properties(city);
 CREATE INDEX idx_properties_price ON properties(price);

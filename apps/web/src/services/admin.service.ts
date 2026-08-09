@@ -76,6 +76,8 @@ export interface RevenueData {
   total: number;
 }
 
+const ADMIN_CACHE_TTL_MS = 15_000;
+
 export const adminService = {
   users: {
     async list(params?: { page?: number; limit?: number; search?: string }) {
@@ -83,15 +85,25 @@ export const adminService = {
       if (params?.page) searchParams.set("page", String(params.page));
       if (params?.limit) searchParams.set("limit", String(params.limit));
       if (params?.search) searchParams.set("search", params.search);
-      return api.get<PaginatedResponse<AdminUser>>(`/admin/users?${searchParams}`);
+      return api.getCached<PaginatedResponse<AdminUser>>(
+        `/admin/users?${searchParams}`,
+        ADMIN_CACHE_TTL_MS
+      );
     },
 
     async updateRole(id: string, role: string) {
-      return api.put<{ data: AdminUser; message: string }>(`/admin/users/${id}/role`, { role });
+      const result = await api.put<{ data: AdminUser; message: string }>(
+        `/admin/users/${id}/role`,
+        { role }
+      );
+      api.clearGetCache("/admin/users");
+      return result;
     },
 
     async deactivate(id: string) {
-      return api.delete<{ message: string }>(`/admin/users/${id}`);
+      const result = await api.delete<{ message: string }>(`/admin/users/${id}`);
+      api.clearGetCache("/admin/users");
+      return result;
     },
   },
 
@@ -100,15 +112,26 @@ export const adminService = {
       const searchParams = new URLSearchParams();
       if (params?.page) searchParams.set("page", String(params.page));
       if (params?.limit) searchParams.set("limit", String(params.limit));
-      return api.get<PaginatedResponse<AdminSubscription>>(`/admin/subscriptions?${searchParams}`);
+      return api.getCached<PaginatedResponse<AdminSubscription>>(
+        `/admin/subscriptions?${searchParams}`,
+        ADMIN_CACHE_TTL_MS
+      );
     },
 
     async update(id: string, data: { status?: string }) {
-      return api.put<{ data: AdminSubscription; message: string }>(`/admin/subscriptions/${id}`, data);
+      const result = await api.put<{ data: AdminSubscription; message: string }>(
+        `/admin/subscriptions/${id}`,
+        data
+      );
+      api.clearGetCache("/admin/subscriptions");
+      return result;
     },
 
     async stats() {
-      return api.get<{ data: SubscriptionStats }>("/admin/subscriptions/stats");
+      return api.getCached<{ data: SubscriptionStats }>(
+        "/admin/subscriptions/stats",
+        ADMIN_CACHE_TTL_MS
+      );
     },
   },
 
@@ -118,14 +141,20 @@ export const adminService = {
     },
 
     async stats() {
-      return api.get<{ data: SystemStats }>("/admin/system/stats");
+      return api.getCached<{ data: SystemStats }>(
+        "/admin/system/stats",
+        ADMIN_CACHE_TTL_MS
+      );
     },
 
     async auditLogs(params?: { page?: number; limit?: number }) {
       const searchParams = new URLSearchParams();
       if (params?.page) searchParams.set("page", String(params.page));
       if (params?.limit) searchParams.set("limit", String(params.limit));
-      return api.get<PaginatedResponse<AuditLog>>(`/admin/system/audit-logs?${searchParams}`);
+      return api.getCached<PaginatedResponse<AuditLog>>(
+        `/admin/system/audit-logs?${searchParams}`,
+        ADMIN_CACHE_TTL_MS
+      );
     },
   },
 
@@ -134,7 +163,10 @@ export const adminService = {
       const searchParams = new URLSearchParams();
       if (params?.page) searchParams.set("page", String(params.page));
       if (params?.limit) searchParams.set("limit", String(params.limit));
-      return api.get<PaginatedResponse<BillingRecord>>(`/admin/billing?${searchParams}`);
+      return api.getCached<PaginatedResponse<BillingRecord>>(
+        `/admin/billing?${searchParams}`,
+        ADMIN_CACHE_TTL_MS
+      );
     },
 
     async revenue(params?: { start?: string; end?: string }) {
@@ -142,7 +174,10 @@ export const adminService = {
       if (params?.start) searchParams.set("start", params.start);
       if (params?.end) searchParams.set("end", params.end);
       const qs = searchParams.toString();
-      return api.get<{ data: RevenueData[] }>(`/admin/billing/revenue${qs ? `?${qs}` : ""}`);
+      return api.getCached<{ data: RevenueData[] }>(
+        `/admin/billing/revenue${qs ? `?${qs}` : ""}`,
+        ADMIN_CACHE_TTL_MS
+      );
     },
   },
 };

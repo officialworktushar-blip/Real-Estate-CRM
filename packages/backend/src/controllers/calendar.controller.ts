@@ -29,7 +29,7 @@ export const calendarController = {
     try {
       const orgId = getOrganizationId(req);
       const userId = getUserId(req);
-      const event = await calendarService.create({ ...req.body, user_id: userId }, orgId);
+      const event = await calendarService.create(req.body, orgId, userId);
       res.status(201).json({ data: event, message: "Event created" });
     } catch (err) {
       next(err);

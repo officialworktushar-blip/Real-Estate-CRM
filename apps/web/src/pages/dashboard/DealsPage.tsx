@@ -5,7 +5,6 @@ import {
   DollarSign,
   Calendar,
   User,
-  TrendingUp,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -51,7 +50,6 @@ export function DealsPage() {
   });
 
   const totalValue = filtered.reduce((sum, d) => sum + (d.value || 0), 0);
-  const totalCommission = filtered.reduce((sum, d) => sum + (d.commission_amount || 0), 0);
 
   const getDealClientName = (deal: typeof deals[0]) => {
     if (deal.clients) return `${deal.clients.first_name} ${deal.clients.last_name}`;
@@ -96,19 +94,6 @@ export function DealsPage() {
               <div>
                 <p className="text-xs text-dark-400">Pipeline Value</p>
                 <p className="text-lg font-bold text-dark-100">{formatAmount(totalValue, currency)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gold-500/10 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-gold-400" />
-              </div>
-              <div>
-                <p className="text-xs text-dark-400">Expected Commission</p>
-                <p className="text-lg font-bold text-gold-400">{formatAmount(totalCommission, currency)}</p>
               </div>
             </div>
           </CardContent>

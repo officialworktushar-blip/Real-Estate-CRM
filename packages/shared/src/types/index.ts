@@ -1,6 +1,6 @@
 export interface CalendarEvent {
   id: string;
-  organization_id: string;
+  org_id: string;
   user_id: string;
   title: string;
   description?: string;
@@ -19,7 +19,7 @@ export interface CalendarEvent {
 
 export interface Subscription {
   id: string;
-  organization_id: string;
+  org_id: string;
   plan: "free" | "starter" | "professional" | "enterprise";
   status: "active" | "trialing" | "past_due" | "canceled";
   current_period_start: string;
@@ -30,7 +30,7 @@ export interface Subscription {
 
 export interface AuditLog {
   id: string;
-  organization_id?: string;
+  org_id?: string;
   user_id: string;
   action: string;
   entity_type: string;

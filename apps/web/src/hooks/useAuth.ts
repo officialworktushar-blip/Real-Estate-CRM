@@ -1,8 +1,8 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useGuestStore } from "@/stores/guestStore";
 import { supabase } from "@/lib/supabase";
-import type { User } from "@/types";
+import type { Profile, User } from "@/types";
 
 const GUEST_USER: User = {
   id: "guest",
@@ -12,28 +12,28 @@ const GUEST_USER: User = {
   is_guest: true,
 };
 
-interface Profile {
-  id: string;
-  user_id: string;
-  full_name: string;
-  avatar_url?: string | null;
-  role: string;
-  organization_id?: string | null;
+interface ProfileFetchResult {
+  profile: Profile | null;
+  error: Error | null;
 }
 
-async function fetchProfile(userId: string): Promise<Profile | null> {
+async function fetchProfile(userId: string): Promise<ProfileFetchResult> {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .eq("user_id", userId)
+    .eq("id", userId)
     .maybeSingle();
 
   if (error) {
     console.error("[useAuth] Failed to fetch profile:", error.message);
-    return null;
+    return { profile: null, error: new Error(error.message) };
   }
 
-  return data as Profile | null;
+  if (!data) {
+    console.warn("[useAuth] No profile row found for user:", userId);
+  }
+
+  return { profile: (data as Profile) || null, error: null };
 }
 
 function mapSupabaseUser(
@@ -62,57 +62,113 @@ function mapSupabaseUser(
     avatar_url:
       profile?.avatar_url || supabaseUser.user_metadata?.avatar_url,
     role,
-    organization_id: profile?.organization_id || undefined,
+    org_id: profile?.org_id || undefined,
     is_guest: false,
   };
 }
 
 export function useAuth() {
-  const { user, setUser, setLoading } = useAuthStore();
+  const { user, profile, setUser, setProfile, setLoading, setProfileLoading } =
+    useAuthStore();
   const { isGuest, enterGuestMode, exitGuestMode } = useGuestStore();
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const isProfileLoading = useAuthStore((s) => s.isProfileLoading);
+  const loadSeqRef = useRef(0);
+
+  useEffect(() => {
+    if (!isLoading && !isProfileLoading) return;
+    const timeout = setTimeout(() => {
+      if (useAuthStore.getState().isLoading) setLoading(false);
+      if (useAuthStore.getState().isProfileLoading) setProfileLoading(false);
+    }, 15000);
+    return () => clearTimeout(timeout);
+  }, [isLoading, isProfileLoading, setLoading, setProfileLoading]);
 
   const applyUser = useCallback(
     async (supabaseUser: any) => {
-      const userId = supabaseUser.id;
-      const profile = await fetchProfile(userId);
-      console.log("User ID:", userId);
-      console.log("Fetched Profile:", profile);
-      console.log("Detected Role:", profile?.role);
-      const mapped = mapSupabaseUser(supabaseUser, profile);
-      console.log("[useAuth] Setting user in store with role:", mapped.role);
-      setUser(mapped);
+      const seq = ++loadSeqRef.current;
+      setProfileLoading(true);
+      try {
+        const result = await fetchProfile(supabaseUser.id);
+
+        if (seq !== loadSeqRef.current) {
+          return;
+        }
+
+        console.log("Auth User:", supabaseUser);
+        console.log("Profile:", result.profile);
+        console.log("Role:", result.profile?.role);
+
+        if (result.error) {
+          console.error(
+            "[useAuth] Profile fetch failed, keeping existing user to avoid role flip. Error:",
+            result.error.message
+          );
+          return;
+        }
+
+        setProfile(result.profile);
+        const mapped = mapSupabaseUser(supabaseUser, result.profile);
+        console.log("[useAuth] Setting user in store with role:", mapped.role);
+        setUser(mapped);
+      } finally {
+        if (seq === loadSeqRef.current) {
+          setProfileLoading(false);
+        }
+      }
     },
-    [setUser]
+    [setUser, setProfile, setProfileLoading]
   );
 
   useEffect(() => {
+    let cancelled = false;
+
     supabase.auth
       .getSession()
       .then(async ({ data: { session } }) => {
+        if (cancelled) return;
         if (session?.user) {
           await applyUser(session.user);
         }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        console.error("[useAuth] Failed to restore session:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (session?.access_token) {
+          localStorage.setItem("access_token", session.access_token);
+        } else {
+          localStorage.removeItem("access_token");
+        }
+
+        if (event === "INITIAL_SESSION") {
+          return;
+        }
         if (session?.user) {
           applyUser(session.user);
         } else if (!useGuestStore.getState().isGuest) {
           setUser(null);
+          setProfile(null);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, [applyUser, setUser, setLoading]);
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [applyUser, setUser, setProfile, setLoading]);
 
   const login = useCallback(
     async (email: string, password: string) => {
       console.log("[useAuth] Login started, clearing cached user/role");
       setUser(null);
+      setProfile(null);
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -141,14 +197,14 @@ export function useAuth() {
       await applyUser(data.user);
       return data;
     },
-    [applyUser, setUser, exitGuestMode]
+    [applyUser, setUser, setProfile, exitGuestMode]
   );
 
   const loginWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: `${window.location.origin}/`,
       },
     });
     if (error) {
@@ -215,7 +271,7 @@ export function useAuth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: `${window.location.origin}/`,
       },
     });
     if (error) {
@@ -228,20 +284,25 @@ export function useAuth() {
   const loginAsGuest = useCallback(() => {
     enterGuestMode();
     setUser(GUEST_USER);
+    setProfile(null);
     setLoading(false);
-  }, [enterGuestMode, setUser, setLoading]);
+    setProfileLoading(false);
+  }, [enterGuestMode, setUser, setProfile, setLoading, setProfileLoading]);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     localStorage.removeItem("access_token");
     exitGuestMode();
     setUser(null);
-  }, [setUser, exitGuestMode]);
+    setProfile(null);
+  }, [setUser, setProfile, exitGuestMode]);
 
   return {
     user,
+    profile,
     isGuest,
-    isLoading: useAuthStore((s) => s.isLoading),
+    isLoading,
+    isProfileLoading,
     login,
     loginWithGoogle,
     register,

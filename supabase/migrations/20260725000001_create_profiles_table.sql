@@ -3,14 +3,16 @@ CREATE TABLE profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID UNIQUE NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL DEFAULT '',
+  email TEXT,
   avatar_url TEXT,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'super_admin')),
-  organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
+  org_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
   phone TEXT,
   company TEXT,
   license_number TEXT,
   bio TEXT,
   timezone TEXT NOT NULL DEFAULT 'America/New_York',
+  country TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

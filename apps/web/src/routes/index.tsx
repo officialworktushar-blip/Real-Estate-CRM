@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AdminRoute } from "./AdminRoute";
+import { HomeRedirect } from "./HomeRedirect";
 import { PageLoader } from "@/components/common/PageLoader";
 
 const LoginPage = lazy(() =>
@@ -229,6 +230,8 @@ export function AppRoutes() {
           }
         />
       </Route>
+
+      <Route path="/" element={<HomeRedirect />} />
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

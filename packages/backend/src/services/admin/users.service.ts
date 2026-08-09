@@ -14,7 +14,10 @@ export const adminUsersService = {
 
     let query = supabaseAdmin
       .from("profiles")
-      .select("*, users:user_id(email, created_at)", { count: "exact" });
+      .select(
+        "id, full_name, email, role, org_id, created_at, updated_at, organizations:org_id(name)",
+        { count: "exact" }
+      );
 
     if (search) {
       query = query.ilike("full_name", `%${search}%`);
@@ -27,7 +30,7 @@ export const adminUsersService = {
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
 
     return {
-      data,
+      data: (data || []).map((row) => ({ ...row, is_active: true })),
       meta: { page, limit, total: count || 0, total_pages: Math.ceil((count || 0) / limit) },
     };
   },
@@ -35,12 +38,14 @@ export const adminUsersService = {
   async getById(id: string) {
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select("*, users:user_id(email, created_at, last_sign_in_at)")
+      .select(
+        "id, full_name, email, role, phone, avatar_url, org_id, country, created_at, updated_at, organizations:org_id(name)"
+      )
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error || !data) throw createAppError("User not found", 404, "NOT_FOUND");
-    return data;
+    return { ...data, is_active: true };
   },
 
   async updateRole(id: string, role: string) {
@@ -58,12 +63,12 @@ export const adminUsersService = {
   async deactivate(id: string) {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("user_id")
+      .select("id")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
-    if (profile?.user_id) {
-      await supabaseAdmin.auth.admin.updateUserById(profile.user_id, {
+    if (profile?.id) {
+      await supabaseAdmin.auth.admin.updateUserById(profile.id, {
         ban_duration: "none",
       });
     }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Card, CardContent } from "@/components/common/Card";
@@ -34,7 +35,9 @@ export function RegisterPage() {
       setSuccess("Account created successfully. You can now sign in.");
       setTimeout(() => {
         if (signedIn) {
-          navigate("/dashboard");
+          const role = useAuthStore.getState().profile?.role;
+          console.log("[RegisterPage] Post-register role:", role);
+          navigate(role === "super_admin" ? "/admin" : "/dashboard");
         } else {
           navigate(
             `/auth/login?message=${encodeURIComponent(

@@ -16,7 +16,7 @@ export type PropertyType =
 
 export interface Property {
   id: string;
-  organization_id: string;
+  org_id: string;
   title: string;
   description?: string;
   address: string;

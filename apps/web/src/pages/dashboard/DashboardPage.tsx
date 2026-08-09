@@ -31,21 +31,26 @@ export function DashboardPage() {
   const { events, isLoading: calendarLoading } = useCalendar();
   const { pipeline, performance, isLoading: reportsLoading } = useReports();
 
+  const safePipeline = pipeline ?? [];
+  const safeLeads = leads ?? [];
+  const safeProperties = properties ?? [];
+  const safeEvents = events ?? [];
+
   const isLoading = leadsLoading || propertiesLoading || calendarLoading || reportsLoading;
 
-  const totalDeals = pipeline.reduce((sum, s) => sum + s.count, 0);
-  const pipelineValue = pipeline.reduce((sum, s) => sum + s.value, 0);
+  const totalDeals = safePipeline.reduce((sum, s) => sum + (s.count || 0), 0);
+  const pipelineValue = safePipeline.reduce((sum, s) => sum + (s.value || 0), 0);
 
   const statsData = [
-    { title: "Total Leads", value: leads.length, change: "All leads", changeType: "neutral" as const, icon: <Users className="h-6 w-6" /> },
-    { title: "Active Properties", value: properties.length, change: "All properties", changeType: "neutral" as const, icon: <Home className="h-6 w-6" /> },
-    { title: "Open Deals", value: totalDeals, change: `${pipeline.length} stages`, changeType: "neutral" as const, icon: <Handshake className="h-6 w-6" /> },
+    { title: "Total Leads", value: safeLeads.length, change: "All leads", changeType: "neutral" as const, icon: <Users className="h-6 w-6" /> },
+    { title: "Active Properties", value: safeProperties.length, change: "All properties", changeType: "neutral" as const, icon: <Home className="h-6 w-6" /> },
+    { title: "Open Deals", value: totalDeals, change: `${safePipeline.length} stages`, changeType: "neutral" as const, icon: <Handshake className="h-6 w-6" /> },
     { title: "Pipeline Value", value: formatAmount(pipelineValue, currency), change: performance ? `${performance.conversion_rate}% conversion` : "Loading...", changeType: "positive" as const, icon: <DollarSign className="h-6 w-6" /> },
   ];
 
-  const recentLeads = leads.slice(0, 5).map((lead) => ({
+  const recentLeads = safeLeads.slice(0, 5).map((lead) => ({
     id: lead.id,
-    name: `${lead.first_name} ${lead.last_name}`,
+    name: `${lead.first_name || ""} ${lead.last_name || ""}`.trim(),
     email: lead.email || "",
     source: lead.source,
     status: lead.status,
@@ -53,17 +58,25 @@ export function DashboardPage() {
     created_at: lead.created_at,
   }));
 
-  const upcomingEvents = events.slice(0, 4).map((evt) => ({
-    id: evt.id,
-    title: evt.title,
-    time: new Date(evt.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-    date: new Date(evt.start_time).toDateString() === new Date().toDateString()
-      ? "Today"
-      : new Date(evt.start_time).toDateString() === new Date(Date.now() + 86400000).toDateString()
-        ? "Tomorrow"
-        : new Date(evt.start_time).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    type: evt.event_type,
-  }));
+  const upcomingEvents = safeEvents.slice(0, 4).map((evt) => {
+    const start = new Date(evt.start_time);
+    const isValidDate = !Number.isNaN(start.getTime());
+    return {
+      id: evt.id,
+      title: evt.title,
+      time: isValidDate
+        ? start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+        : "TBD",
+      date: isValidDate
+        ? start.toDateString() === new Date().toDateString()
+          ? "Today"
+          : start.toDateString() === new Date(Date.now() + 86400000).toDateString()
+            ? "Tomorrow"
+            : start.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        : "TBD",
+      type: evt.event_type,
+    };
+  });
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -162,17 +175,17 @@ export function DashboardPage() {
             <CardContent>
               {reportsLoading ? (
                 <div className="text-center text-dark-500 text-sm py-4">Loading pipeline...</div>
-              ) : pipeline.length === 0 ? (
+              ) : safePipeline.length === 0 ? (
                 <div className="text-center text-dark-500 text-sm py-4">No pipeline data yet.</div>
               ) : (
                 <div className="space-y-4">
-                  {pipeline.map((stage) => (
+                  {safePipeline.map((stage) => (
                     <div key={stage.stage} className="flex items-center gap-4">
                       <div className="w-24 text-xs font-medium text-dark-400 shrink-0 capitalize">{stage.stage.replace("_", " ")}</div>
                       <div className="flex-1 h-7 bg-dark-700/50 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full bg-brand-500 transition-all duration-500"
-                          style={{ width: `${Math.max((stage.count / Math.max(...pipeline.map((s) => s.count), 1)) * 100, 2)}%` }}
+                          style={{ width: `${Math.max((stage.count / Math.max(...safePipeline.map((s) => s.count), 1)) * 100, 2)}%` }}
                         />
                       </div>
                       <div className="text-right shrink-0 w-20">
@@ -234,11 +247,11 @@ export function DashboardPage() {
             <CardContent className="p-0">
               {propertiesLoading ? (
                 <div className="px-6 py-8 text-center text-dark-500 text-sm">Loading properties...</div>
-              ) : properties.length === 0 ? (
+              ) : safeProperties.length === 0 ? (
                 <div className="px-6 py-8 text-center text-dark-500 text-sm">No properties yet.</div>
               ) : (
                 <div className="divide-y divide-dark-700/50">
-                  {properties.slice(0, 3).map((p) => (
+                  {safeProperties.slice(0, 3).map((p) => (
                     <div key={p.id} className="px-6 py-3 hover:bg-dark-700/30 transition-colors">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">

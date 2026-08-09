@@ -3,40 +3,72 @@ import { adminService } from "@/services/admin.service";
 import type { AdminUser, AdminSubscription, SubscriptionStats, SystemStats, AuditLog, BillingRecord, RevenueData } from "@/services/admin.service";
 import type { PaginatedResponse } from "@/types";
 
+function toErrorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
+function collectRejectionMessages(results: PromiseSettledResult<unknown>[]): string {
+  return results
+    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+    .map((r) => {
+      const reason = r.reason as { message?: string } | null | undefined;
+      return reason?.message;
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
 export function useAdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, total_pages: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
-
-  const fetchUsers = useCallback(async (pageNum = 1, searchQuery = search) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await adminService.users.list({ page: pageNum, limit: 20, search: searchQuery });
-      setUsers(res.data);
-      setMeta(res.meta);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch users");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [search]);
+  const [loadKey, setLoadKey] = useState(0);
 
   useEffect(() => {
-    fetchUsers(page, search);
-  }, [page, search, fetchUsers]);
+    let active = true;
+    if (!hasLoaded) setIsLoading(true);
+    setError(null);
 
-  const refetch = useCallback(() => fetchUsers(page, search), [fetchUsers, page, search]);
+    adminService.users
+      .list({ page, limit: 20, search })
+      .then((res) => {
+        if (!active) return;
+        setUsers(res.data);
+        setMeta(res.meta);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(toErrorMessage(err, "Failed to fetch users"));
+      })
+      .finally(() => {
+        if (active) {
+          setHasLoaded(true);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [page, search, loadKey]);
+
+  const refetch = useCallback(() => setLoadKey((k) => k + 1), []);
+
+  const setSearch = useCallback((q: string) => {
+    setSearchInput(q);
+    setPage(1);
+  }, []);
 
   const deactivateUser = useCallback(async (userId: string) => {
     try {
       await adminService.users.deactivate(userId);
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_active: false } : u)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to deactivate user");
+      setError(toErrorMessage(err, "Failed to deactivate user"));
     }
   }, []);
 
@@ -46,7 +78,7 @@ export function useAdminUsers() {
     isLoading,
     error,
     search,
-    setSearch: (q: string) => { setSearch(q); setPage(1); },
+    setSearch,
     page,
     setPage,
     refetch,
@@ -59,40 +91,48 @@ export function useAdminSubscriptions() {
   const [stats, setStats] = useState<SubscriptionStats | null>(null);
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, total_pages: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-
-  const fetchData = useCallback(async (pageNum = 1) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [subsRes, statsRes] = await Promise.allSettled([
-        adminService.subscriptions.list({ page: pageNum, limit: 20 }),
-        adminService.subscriptions.stats(),
-      ]);
-
-      if (subsRes.status === "fulfilled") {
-        setSubscriptions(subsRes.value.data);
-        setMeta(subsRes.value.meta);
-      }
-      if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
-
-      const errors = [subsRes, statsRes]
-        .filter((r) => r.status === "rejected")
-        .map((r) => (r as PromiseRejectedResult).reason?.message);
-      if (errors.length > 0) setError(errors.filter(Boolean).join("; "));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch subscriptions");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [loadKey, setLoadKey] = useState(0);
 
   useEffect(() => {
-    fetchData(page);
-  }, [page, fetchData]);
+    let active = true;
+    if (!hasLoaded) setIsLoading(true);
+    setError(null);
 
-  const refetch = useCallback(() => fetchData(page), [fetchData, page]);
+    Promise.allSettled([
+      adminService.subscriptions.list({ page, limit: 20 }),
+      adminService.subscriptions.stats(),
+    ])
+      .then((results) => {
+        if (!active) return;
+        const [subsRes, statsRes] = results;
+        if (subsRes.status === "fulfilled") {
+          setSubscriptions(subsRes.value.data);
+          setMeta(subsRes.value.meta);
+        }
+        if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
+        const message = collectRejectionMessages(results);
+        if (message) setError(message);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(toErrorMessage(err, "Failed to fetch subscriptions"));
+      })
+      .finally(() => {
+        if (active) {
+          setHasLoaded(true);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [page, loadKey]);
+
+  const refetch = useCallback(() => setLoadKey((k) => k + 1), []);
 
   return {
     subscriptions,
@@ -111,40 +151,48 @@ export function useAdminBilling() {
   const [revenue, setRevenue] = useState<RevenueData[]>([]);
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, total_pages: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-
-  const fetchData = useCallback(async (pageNum = 1) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [billingRes, revenueRes] = await Promise.allSettled([
-        adminService.billing.list({ page: pageNum, limit: 20 }),
-        adminService.billing.revenue(),
-      ]);
-
-      if (billingRes.status === "fulfilled") {
-        setRecords(billingRes.value.data);
-        setMeta(billingRes.value.meta);
-      }
-      if (revenueRes.status === "fulfilled") setRevenue(revenueRes.value.data);
-
-      const errors = [billingRes, revenueRes]
-        .filter((r) => r.status === "rejected")
-        .map((r) => (r as PromiseRejectedResult).reason?.message);
-      if (errors.length > 0) setError(errors.filter(Boolean).join("; "));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch billing data");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [loadKey, setLoadKey] = useState(0);
 
   useEffect(() => {
-    fetchData(page);
-  }, [page, fetchData]);
+    let active = true;
+    if (!hasLoaded) setIsLoading(true);
+    setError(null);
 
-  const refetch = useCallback(() => fetchData(page), [fetchData, page]);
+    Promise.allSettled([
+      adminService.billing.list({ page, limit: 20 }),
+      adminService.billing.revenue(),
+    ])
+      .then((results) => {
+        if (!active) return;
+        const [billingRes, revenueRes] = results;
+        if (billingRes.status === "fulfilled") {
+          setRecords(billingRes.value.data);
+          setMeta(billingRes.value.meta);
+        }
+        if (revenueRes.status === "fulfilled") setRevenue(revenueRes.value.data);
+        const message = collectRejectionMessages(results);
+        if (message) setError(message);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(toErrorMessage(err, "Failed to fetch billing data"));
+      })
+      .finally(() => {
+        if (active) {
+          setHasLoaded(true);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [page, loadKey]);
+
+  const refetch = useCallback(() => setLoadKey((k) => k + 1), []);
 
   return {
     records,
@@ -162,40 +210,50 @@ export function useAdminSystem() {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [statsRes, logsRes] = await Promise.allSettled([
-        adminService.system.stats(),
-        adminService.system.auditLogs({ limit: 50 }),
-      ]);
-
-      if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
-      if (logsRes.status === "fulfilled") setAuditLogs(logsRes.value.data);
-
-      const errors = [statsRes, logsRes]
-        .filter((r) => r.status === "rejected")
-        .map((r) => (r as PromiseRejectedResult).reason?.message);
-      if (errors.length > 0) setError(errors.filter(Boolean).join("; "));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch system data");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [loadKey, setLoadKey] = useState(0);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let active = true;
+    if (!hasLoaded) setIsLoading(true);
+    setError(null);
+
+    Promise.allSettled([
+      adminService.system.stats(),
+      adminService.system.auditLogs({ limit: 50 }),
+    ])
+      .then((results) => {
+        if (!active) return;
+        const [statsRes, logsRes] = results;
+        if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
+        if (logsRes.status === "fulfilled") setAuditLogs(logsRes.value.data);
+        const message = collectRejectionMessages(results);
+        if (message) setError(message);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(toErrorMessage(err, "Failed to fetch system data"));
+      })
+      .finally(() => {
+        if (active) {
+          setHasLoaded(true);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [loadKey]);
+
+  const refetch = useCallback(() => setLoadKey((k) => k + 1), []);
 
   return {
     stats,
     auditLogs,
     isLoading,
     error,
-    refetch: fetchData,
+    refetch,
   };
 }

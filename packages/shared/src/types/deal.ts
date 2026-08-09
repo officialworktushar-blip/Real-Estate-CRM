@@ -11,14 +11,12 @@ export type DealStage =
 
 export interface Deal {
   id: string;
-  organization_id: string;
+  org_id: string;
   title: string;
-  client_id: string;
+  lead_id: string;
   property_id?: string;
   stage: DealStage;
   value: number;
-  commission_rate?: number;
-  commission_amount?: number;
   expected_close_date?: string;
   actual_close_date?: string;
   notes?: string;

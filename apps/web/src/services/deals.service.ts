@@ -12,7 +12,6 @@ interface CreateDealData {
   title: string;
   stage?: string;
   value: number;
-  commission_amount?: number;
   expected_close_date?: string;
   client_id?: string;
   property_id?: string;

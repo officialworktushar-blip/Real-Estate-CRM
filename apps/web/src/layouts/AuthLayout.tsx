@@ -3,9 +3,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/common/BrandLogo";
 
 export function AuthLayout() {
-  const { user, isGuest, isLoading } = useAuth();
+  const { user, profile, isGuest, isLoading, isProfileLoading } = useAuth();
 
-  if (isLoading) {
+  if (isLoading || isProfileLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-dark-950">
         <div className="flex flex-col items-center gap-4">
@@ -16,7 +16,14 @@ export function AuthLayout() {
     );
   }
 
-  if (user && !isGuest) return <Navigate to="/dashboard" replace />;
+  if (user && !isGuest) {
+    return (
+      <Navigate
+        to={profile?.role === "super_admin" ? "/admin" : "/dashboard"}
+        replace
+      />
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-dark-950 px-4 overflow-hidden">

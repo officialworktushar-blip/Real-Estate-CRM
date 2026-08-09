@@ -14,11 +14,17 @@ create table if not exists organizations (
 create table if not exists profiles (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid unique not null references auth.users(id) on delete cascade,
-  organization_id uuid references organizations(id) on delete set null,
+  org_id uuid references organizations(id) on delete set null,
   email text,
   full_name text,
   avatar_url text,
   role text default 'user' check (role in ('user', 'super_admin')),
+  phone text,
+  company text,
+  license_number text,
+  bio text,
+  timezone text default 'America/New_York',
+  country text,
   stripe_customer_id text,
   razorpay_customer_id text,
   created_at timestamptz default now(),
@@ -28,7 +34,7 @@ create table if not exists profiles (
 -- Leads
 create table if not exists leads (
   id uuid primary key default uuid_generate_v4(),
-  organization_id uuid not null references organizations(id) on delete cascade,
+  org_id uuid not null references organizations(id) on delete cascade,
   full_name text not null,
   email text,
   phone text,
@@ -44,7 +50,7 @@ create table if not exists leads (
 -- Properties
 create table if not exists properties (
   id uuid primary key default uuid_generate_v4(),
-  organization_id uuid not null references organizations(id) on delete cascade,
+  org_id uuid not null references organizations(id) on delete cascade,
   title text not null,
   address text,
   city text,
@@ -64,10 +70,10 @@ create table if not exists properties (
   updated_at timestamptz default now()
 );
 
--- Clients
-create table if not exists clients (
+-- Contacts
+create table if not exists contacts (
   id uuid primary key default uuid_generate_v4(),
-  organization_id uuid not null references organizations(id) on delete cascade,
+  org_id uuid not null references organizations(id) on delete cascade,
   full_name text not null,
   email text,
   phone text,
@@ -81,12 +87,11 @@ create table if not exists clients (
 -- Deals
 create table if not exists deals (
   id uuid primary key default uuid_generate_v4(),
-  organization_id uuid not null references organizations(id) on delete cascade,
+  org_id uuid not null references organizations(id) on delete cascade,
   title text not null,
   value numeric,
   stage text default 'lead' check (stage in ('lead', 'proposal', 'negotiation', 'contract', 'closed_won', 'closed_lost')),
   property_id uuid references properties(id) on delete set null,
-  client_id uuid references clients(id) on delete set null,
   lead_id uuid references leads(id) on delete set null,
   expected_close_date date,
   notes text,
@@ -95,20 +100,18 @@ create table if not exists deals (
   updated_at timestamptz default now()
 );
 
--- Calendar Events
-create table if not exists calendar_events (
+-- Activities (dashboard calendar)
+create table if not exists activities (
   id uuid primary key default uuid_generate_v4(),
-  organization_id uuid not null references organizations(id) on delete cascade,
+  org_id uuid not null references organizations(id) on delete cascade,
   title text not null,
   description text,
-  event_type text default 'meeting' check (event_type in ('meeting', 'showing', 'follow_up', 'deadline', 'other')),
-  start_time timestamptz not null,
-  end_time timestamptz not null,
-  location text,
-  lead_id uuid references leads(id) on delete set null,
-  property_id uuid references properties(id) on delete set null,
-  client_id uuid references clients(id) on delete set null,
-  assigned_to uuid references profiles(user_id),
+  type text default 'meeting',
+  due_date timestamptz,
+  completed boolean default false,
+  performed_by uuid,
+  related_to_id uuid,
+  related_to_type text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -116,46 +119,45 @@ create table if not exists calendar_events (
 -- Subscriptions
 create table if not exists subscriptions (
   id uuid primary key default uuid_generate_v4(),
-  user_id uuid unique not null references auth.users(id) on delete cascade,
+  org_id uuid unique references organizations(id) on delete cascade,
   plan text default 'free' check (plan in ('free', 'starter', 'professional', 'enterprise')),
   status text default 'active' check (status in ('active', 'past_due', 'cancelled', 'pending')),
   stripe_subscription_id text,
   razorpay_subscription_id text,
-  current_period_end timestamptz,
+  current_period_start timestamptz default now(),
+  current_period_end timestamptz default now() + interval '30 days',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
--- Audit Log
-create table if not exists audit_log (
+-- Admin Log
+create table if not exists admin_logs (
   id uuid primary key default uuid_generate_v4(),
-  organization_id uuid references organizations(id) on delete cascade,
-  user_id uuid,
+  org_id uuid references organizations(id) on delete cascade,
+  admin_id uuid,
   action text not null,
-  entity_type text,
-  entity_id uuid,
-  old_values jsonb,
-  new_values jsonb,
-  ip_address text,
+  target_type text,
+  target_id uuid,
+  details jsonb,
   created_at timestamptz default now()
 );
 
 -- Indexes
 create index if not exists idx_profiles_user_id on profiles(user_id);
-create index if not exists idx_profiles_organization_id on profiles(organization_id);
-create index if not exists idx_leads_organization_id on leads(organization_id);
-create index if not exists idx_properties_organization_id on properties(organization_id);
-create index if not exists idx_clients_organization_id on clients(organization_id);
-create index if not exists idx_deals_organization_id on deals(organization_id);
-create index if not exists idx_calendar_events_organization_id on calendar_events(organization_id);
-create index if not exists idx_calendar_events_time on calendar_events(start_time, end_time);
-create index if not exists idx_subscriptions_user_id on subscriptions(user_id);
-create index if not exists idx_audit_log_organization_id on audit_log(organization_id);
+create index if not exists idx_profiles_org_id on profiles(org_id);
+create index if not exists idx_leads_org_id on leads(org_id);
+create index if not exists idx_properties_org_id on properties(org_id);
+create index if not exists idx_contacts_org_id on contacts(org_id);
+create index if not exists idx_deals_org_id on deals(org_id);
+create index if not exists idx_activities_org_id on activities(org_id);
+create index if not exists idx_activities_due_date on activities(due_date);
+create index if not exists idx_subscriptions_org_id on subscriptions(org_id);
+create index if not exists idx_admin_logs_org_id on admin_logs(org_id);
 
 -- Row Level Security
 alter table leads enable row level security;
 alter table properties enable row level security;
-alter table clients enable row level security;
+alter table contacts enable row level security;
 alter table deals enable row level security;
-alter table calendar_events enable row level security;
+alter table activities enable row level security;
 alter table subscriptions enable row level security;

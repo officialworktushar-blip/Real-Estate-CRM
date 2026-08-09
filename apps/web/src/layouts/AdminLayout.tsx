@@ -1,3 +1,4 @@
+import { Component, type ReactNode } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Sidebar } from "@/components/common/Sidebar";
@@ -5,6 +6,43 @@ import { Topbar } from "@/components/common/Topbar";
 import { useAppStore } from "@/stores/appStore";
 import { cn } from "@/utils/helpers";
 import { Shield } from "lucide-react";
+
+interface BoundaryState {
+  error: Error | null;
+}
+
+class AdminPageBoundary extends Component<{ children: ReactNode }, BoundaryState> {
+  state: BoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): BoundaryState {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      console.error("[AdminLayout] Admin page failed to render:", this.state.error);
+      return (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6">
+          <p className="text-sm font-semibold text-red-400 mb-2">
+            Admin page failed to render
+          </p>
+          <pre className="text-xs text-red-300/80 whitespace-pre-wrap text-left bg-dark-900/60 rounded-lg p-4 mb-4">
+            {this.state.error.message}
+            {"\n"}
+            {this.state.error.stack}
+          </pre>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export function AdminLayout() {
   const { user, isLoading } = useAuth();
@@ -42,7 +80,9 @@ export function AdminLayout() {
             <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
             Super Admin
           </div>
-          <Outlet />
+          <AdminPageBoundary>
+            <Outlet />
+          </AdminPageBoundary>
         </div>
       </main>
     </div>

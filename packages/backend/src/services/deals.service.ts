@@ -15,8 +15,8 @@ export const dealsService = {
 
     let query = supabaseAdmin
       .from("deals")
-      .select("*, clients(first_name, last_name)", { count: "exact" })
-      .eq("organization_id", orgId);
+      .select("*, leads(full_name, email, phone), properties(title, address, price)", { count: "exact" })
+      .eq("org_id", orgId);
 
     if (search) {
       query = query.ilike("title", `%${search}%`);
@@ -40,9 +40,9 @@ export const dealsService = {
   async getById(id: string, orgId: string) {
     const { data, error } = await supabaseAdmin
       .from("deals")
-      .select("*, clients(*), properties(*)")
+      .select("*, leads(*), properties(*)")
       .eq("id", id)
-      .eq("organization_id", orgId)
+      .eq("org_id", orgId)
       .single();
 
     if (error || !data) throw createAppError("Deal not found", 404, "NOT_FOUND");
@@ -52,7 +52,7 @@ export const dealsService = {
   async create(payload: Record<string, unknown>, orgId: string) {
     const { data, error } = await supabaseAdmin
       .from("deals")
-      .insert({ ...payload, organization_id: orgId })
+      .insert({ ...toDealsPayload(payload), org_id: orgId })
       .select()
       .single();
 
@@ -63,9 +63,9 @@ export const dealsService = {
   async update(id: string, payload: Record<string, unknown>, orgId: string) {
     const { data, error } = await supabaseAdmin
       .from("deals")
-      .update({ ...payload, updated_at: new Date().toISOString() })
+      .update({ ...toDealsPayload(payload), updated_at: new Date().toISOString() })
       .eq("id", id)
-      .eq("organization_id", orgId)
+      .eq("org_id", orgId)
       .select()
       .single();
 
@@ -78,8 +78,20 @@ export const dealsService = {
       .from("deals")
       .delete()
       .eq("id", id)
-      .eq("organization_id", orgId);
+      .eq("org_id", orgId);
 
     if (error) throw createAppError(error.message, 400, "DELETE_FAILED");
   },
 };
+
+// The frontend sends the legacy commission_amount/client_id contract, but the
+// deployed "deals" table has no such columns and links to leads instead of
+// clients. Adapt the payload so creates and updates succeed.
+function toDealsPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const row: Record<string, unknown> = { ...payload };
+  delete row.commission_amount;
+  delete row.clients;
+  if ("client_id" in row && !("lead_id" in row)) row.lead_id = row.client_id;
+  delete row.client_id;
+  return row;
+}

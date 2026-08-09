@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Card, CardContent } from "@/components/common/Card";
@@ -30,7 +31,9 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate("/dashboard");
+      const role = useAuthStore.getState().profile?.role;
+      console.log("[LoginPage] Post-login role:", role);
+      navigate(role === "super_admin" ? "/admin" : "/dashboard");
     } catch (err) {
       setError(friendlyError(err));
     } finally {

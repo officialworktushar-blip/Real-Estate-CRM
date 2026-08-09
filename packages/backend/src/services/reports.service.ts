@@ -11,7 +11,7 @@ export const reportsService = {
     const { data, error } = await supabaseAdmin
       .from("deals")
       .select("stage, value")
-      .eq("organization_id", orgId);
+      .eq("org_id", orgId);
 
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
 
@@ -34,7 +34,7 @@ export const reportsService = {
     const { data, error } = await supabaseAdmin
       .from("deals")
       .select("assigned_to, value")
-      .eq("organization_id", orgId)
+      .eq("org_id", orgId)
       .eq("stage", "closed_won");
 
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
@@ -57,8 +57,8 @@ export const reportsService = {
   async revenue(orgId: string, _range: DateRange) {
     const { data, error } = await supabaseAdmin
       .from("deals")
-      .select("created_at, value, commission_amount")
-      .eq("organization_id", orgId)
+      .select("created_at, value")
+      .eq("org_id", orgId)
       .eq("stage", "closed_won")
       .order("created_at", { ascending: true });
 

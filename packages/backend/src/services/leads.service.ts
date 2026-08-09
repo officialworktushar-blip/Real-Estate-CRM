@@ -17,10 +17,10 @@ export const leadsService = {
     let query = supabaseAdmin
       .from("leads")
       .select("*", { count: "exact" })
-      .eq("organization_id", orgId);
+      .eq("org_id", orgId);
 
     if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
     const { data, count, error } = await query
@@ -45,7 +45,7 @@ export const leadsService = {
       .from("leads")
       .select("*")
       .eq("id", id)
-      .eq("organization_id", orgId)
+      .eq("org_id", orgId)
       .single();
 
     if (error || !data) throw createAppError("Lead not found", 404, "NOT_FOUND");
@@ -55,7 +55,7 @@ export const leadsService = {
   async create(payload: Record<string, unknown>, orgId: string) {
     const { data, error } = await supabaseAdmin
       .from("leads")
-      .insert({ ...payload, organization_id: orgId })
+      .insert({ ...toLeadsPayload(payload), org_id: orgId })
       .select()
       .single();
 
@@ -66,9 +66,9 @@ export const leadsService = {
   async update(id: string, payload: Record<string, unknown>, orgId: string) {
     const { data, error } = await supabaseAdmin
       .from("leads")
-      .update({ ...payload, updated_at: new Date().toISOString() })
+      .update({ ...toLeadsPayload(payload), updated_at: new Date().toISOString() })
       .eq("id", id)
-      .eq("organization_id", orgId)
+      .eq("org_id", orgId)
       .select()
       .single();
 
@@ -81,8 +81,26 @@ export const leadsService = {
       .from("leads")
       .delete()
       .eq("id", id)
-      .eq("organization_id", orgId);
+      .eq("org_id", orgId);
 
     if (error) throw createAppError(error.message, 400, "DELETE_FAILED");
   },
 };
+
+// The frontend sends the legacy first_name/last_name/budget_min contract, but
+// the deployed "leads" table uses full_name (and has no per-min/max budget or
+// property-type preference columns). Adapt the payload so creates and updates
+// succeed instead of failing on non-existent columns.
+function toLeadsPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const row: Record<string, unknown> = { ...payload };
+  const first = typeof row.first_name === "string" ? row.first_name : "";
+  const last = typeof row.last_name === "string" ? row.last_name : "";
+  if (first || last) row.full_name = [first, last].filter(Boolean).join(" ").trim();
+  delete row.first_name;
+  delete row.last_name;
+  delete row.budget_min;
+  delete row.budget_max;
+  delete row.preferred_location;
+  delete row.property_type_preference;
+  return row;
+}

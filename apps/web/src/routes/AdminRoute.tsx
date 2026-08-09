@@ -8,12 +8,6 @@ interface AdminRouteProps {
 export function AdminRoute({ children }: AdminRouteProps) {
   const { user, isLoading } = useAuth();
 
-  console.log("[AdminRoute] rendering", {
-    user,
-    role: user?.role,
-    isLoading,
-  });
-
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -27,11 +21,11 @@ export function AdminRoute({ children }: AdminRouteProps) {
   }
 
   if (user.role !== "super_admin") {
-    console.log("[AdminRoute] Access denied for role:", user.role);
+    console.log("[AdminRoute] Access denied. Role:", user.role);
     return <Navigate to="/dashboard" replace />;
   }
 
-  console.log("[AdminRoute] Access granted for role:", user.role);
+  console.log("[AdminRoute] Access granted. Role:", user.role);
 
   return <>{children}</>;
 }

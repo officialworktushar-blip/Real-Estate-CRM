@@ -9,8 +9,8 @@ export const authService = {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("*")
-      .eq("user_id", data.user.id)
-      .single();
+      .eq("id", data.user.id)
+      .maybeSingle();
 
     return {
       user: data.user,
@@ -29,7 +29,9 @@ export const authService = {
     if (error) throw createAppError(error.message, 400, "REGISTRATION_FAILED");
 
     await supabaseAdmin.from("profiles").insert({
-      user_id: data.user.id,
+      id: data.user.id,
+      email: payload.email,
+      full_name: payload.full_name,
       role: "user",
     });
 

@@ -33,27 +33,26 @@ export const adminBillingService = {
 
   async revenue(_range: DateRange) {
     const { data, error } = await supabaseAdmin
-      .from("subscriptions")
-      .select("plan, status")
-      .neq("plan", "free")
-      .eq("status", "active");
+      .from("invoices")
+      .select("amount, provider, status, paid_at, created_at");
 
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
 
-    const prices: Record<string, number> = { starter: 29, professional: 79, enterprise: 199 };
-
-    const grouped: Record<string, number> = {};
+    const byMonth: Record<string, { stripe: number; razorpay: number; total: number }> = {};
     for (const row of data || []) {
-      const plan = row.plan || "unknown";
-      grouped[plan] = (grouped[plan] || 0) + 1;
+      if (row.status !== "paid" && row.status !== "succeeded") continue;
+      const amount = Number(row.amount) || 0;
+      const date = new Date(row.paid_at || row.created_at);
+      if (Number.isNaN(date.getTime())) continue;
+      const month = date.toISOString().slice(0, 7);
+      const bucket = (byMonth[month] ??= { stripe: 0, razorpay: 0, total: 0 });
+      if (row.provider === "razorpay") bucket.razorpay += amount;
+      else bucket.stripe += amount;
+      bucket.total += amount;
     }
 
-    const plans = Object.entries(grouped).map(([plan, count]) => ({ plan, count }));
-    const estimated_mrr = plans.reduce(
-      (sum: number, row: { plan: string; count: number }) => sum + (prices[row.plan] || 0) * row.count,
-      0
-    );
-
-    return { plans, estimated_mrr };
+    return Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({ month, ...v }));
   },
 };

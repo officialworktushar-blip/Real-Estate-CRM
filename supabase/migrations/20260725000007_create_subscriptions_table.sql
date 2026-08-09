@@ -1,7 +1,7 @@
 -- Create subscriptions table
 CREATE TABLE subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID UNIQUE NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  org_id UUID UNIQUE NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   plan TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'starter', 'professional', 'enterprise')),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'trialing', 'past_due', 'canceled')),
   current_period_start TIMESTAMPTZ NOT NULL DEFAULT now(),

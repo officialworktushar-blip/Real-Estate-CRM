@@ -33,7 +33,7 @@ export const razorpayService = {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("email, full_name")
-      .eq("user_id", userId)
+      .eq("id", userId)
       .single();
 
     if (!profile) throw createAppError("User not found", 404, "USER_NOT_FOUND");

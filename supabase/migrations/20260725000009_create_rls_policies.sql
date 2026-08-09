@@ -22,16 +22,16 @@ CREATE POLICY "Super admins can manage all profiles"
 CREATE POLICY "Users can view own org leads"
   ON leads FOR SELECT
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
 CREATE POLICY "Users can manage own org leads"
   ON leads FOR ALL
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
@@ -39,33 +39,33 @@ CREATE POLICY "Users can manage own org leads"
 CREATE POLICY "Users can view own org properties"
   ON properties FOR SELECT
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
 CREATE POLICY "Users can manage own org properties"
   ON properties FOR ALL
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
--- Clients: organization-scoped access
-CREATE POLICY "Users can view own org clients"
-  ON clients FOR SELECT
+-- Contacts: organization-scoped access
+CREATE POLICY "Users can view own org contacts"
+  ON contacts FOR SELECT
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
-CREATE POLICY "Users can manage own org clients"
-  ON clients FOR ALL
+CREATE POLICY "Users can manage own org contacts"
+  ON contacts FOR ALL
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
@@ -73,38 +73,38 @@ CREATE POLICY "Users can manage own org clients"
 CREATE POLICY "Users can view own org deals"
   ON deals FOR SELECT
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
 CREATE POLICY "Users can manage own org deals"
   ON deals FOR ALL
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
--- Calendar events: user-specific + org-scoped
-CREATE POLICY "Users can view own org events"
-  ON calendar_events FOR SELECT
+-- Activities: user-specific + org-scoped
+CREATE POLICY "Users can view own org activities"
+  ON activities FOR SELECT
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
-CREATE POLICY "Users can manage own events"
-  ON calendar_events FOR ALL
-  USING (user_id = auth.uid());
+CREATE POLICY "Users can manage own activities"
+  ON activities FOR ALL
+  USING (performed_by = auth.uid());
 
 -- Subscriptions: org-scoped, admin-only management
 CREATE POLICY "Users can view own org subscription"
   ON subscriptions FOR SELECT
   USING (
-    organization_id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+    org_id IN (
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
@@ -136,7 +136,7 @@ CREATE POLICY "Users can view own organization"
   ON organizations FOR SELECT
   USING (
     id IN (
-      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
+      SELECT org_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 

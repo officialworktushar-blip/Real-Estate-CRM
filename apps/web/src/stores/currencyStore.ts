@@ -18,6 +18,16 @@ export const useCurrencyStore = create<CurrencyStore>()(
         set({ currency: current === "USD" ? "INR" : "USD" });
       },
     }),
-    { name: "oryntal-currency" }
+    {
+      name: "oryntal-currency",
+      merge: (persisted, current) => {
+        const raw = persisted as { currency?: unknown } | null;
+        const currency =
+          raw?.currency === "INR" || raw?.currency === "USD"
+            ? raw.currency
+            : current.currency;
+        return { ...current, currency };
+      },
+    }
   )
 );
