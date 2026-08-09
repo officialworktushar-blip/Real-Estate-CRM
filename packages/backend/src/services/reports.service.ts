@@ -7,12 +7,11 @@ interface DateRange {
 }
 
 export const reportsService = {
-  async pipeline(orgId: string) {
-    const { data, error } = await supabaseAdmin
-      .from("deals")
-      .select("stage, value")
-      .eq("org_id", orgId);
+  async pipeline(orgId: string | null) {
+    let query = supabaseAdmin.from("deals").select("stage, value");
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { data, error } = await query;
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
 
     const grouped: Record<string, { count: number; total_value: number }> = {};
@@ -30,13 +29,11 @@ export const reportsService = {
     }));
   },
 
-  async performance(orgId: string, _range: DateRange) {
-    const { data, error } = await supabaseAdmin
-      .from("deals")
-      .select("assigned_to, value")
-      .eq("org_id", orgId)
-      .eq("stage", "closed_won");
+  async performance(orgId: string | null, _range: DateRange) {
+    let query = supabaseAdmin.from("deals").select("assigned_to, value").eq("stage", "closed_won");
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { data, error } = await query;
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
 
     const grouped: Record<string, { count: number; total_value: number }> = {};
@@ -54,15 +51,27 @@ export const reportsService = {
     }));
   },
 
-  async revenue(orgId: string, _range: DateRange) {
-    const { data, error } = await supabaseAdmin
+  async revenue(orgId: string | null, _range: DateRange) {
+    let query = supabaseAdmin
       .from("deals")
-      .select("created_at, value")
-      .eq("org_id", orgId)
-      .eq("stage", "closed_won")
-      .order("created_at", { ascending: true });
+      .select("value, created_at, actual_close_date")
+      .eq("stage", "closed_won");
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { data, error } = await query;
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
-    return data;
+
+    const months: Record<string, number> = {};
+    for (const deal of data || []) {
+      const date = new Date(deal.actual_close_date || deal.created_at);
+      if (Number.isNaN(date.getTime())) continue;
+      const month = date.toISOString().slice(0, 7);
+      months[month] = (months[month] || 0) + (Number(deal.value) || 0);
+    }
+
+    return Object.entries(months).map(([month, total]) => ({
+      month,
+      total,
+    }));
   },
 };

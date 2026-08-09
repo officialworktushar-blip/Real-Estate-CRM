@@ -2,10 +2,8 @@ export type LeadStatus =
   | "new"
   | "contacted"
   | "qualified"
-  | "proposal"
-  | "negotiation"
-  | "closed_won"
-  | "closed_lost";
+  | "unqualified"
+  | "converted";
 
 export type LeadSource =
   | "website"

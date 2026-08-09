@@ -5,15 +5,15 @@ interface ClientListParams {
   page?: number;
   limit?: number;
   search?: string;
-  client_type?: string;
+  type?: string;
 }
 
-interface CreateClientData {
-  first_name: string;
-  last_name: string;
-  email: string;
+export interface CreateClientData {
+  full_name: string;
+  email?: string;
   phone?: string;
-  client_type: string;
+  type?: string;
+  notes?: string;
 }
 
 export const clientsService = {
@@ -22,7 +22,7 @@ export const clientsService = {
     if (params.page) searchParams.set("page", String(params.page));
     if (params.limit) searchParams.set("limit", String(params.limit));
     if (params.search) searchParams.set("search", params.search);
-    if (params.client_type) searchParams.set("client_type", params.client_type);
+    if (params.type) searchParams.set("type", params.type);
     return api.get<PaginatedResponse<Client>>(`/clients?${searchParams}`);
   },
 

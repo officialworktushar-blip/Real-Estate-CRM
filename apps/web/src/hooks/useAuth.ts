@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useGuestStore } from "@/stores/guestStore";
 import { supabase } from "@/lib/supabase";
+import { api } from "@/services/api";
 import type { Profile, User } from "@/types";
 
 const GUEST_USER: User = {
@@ -107,8 +108,26 @@ export function useAuth() {
           return;
         }
 
-        setProfile(result.profile);
-        const mapped = mapSupabaseUser(supabaseUser, result.profile);
+        // New signups / OAuth accounts may lack a linked org (or a profile row
+        // entirely) if provisioning lagged behind the auth event. Ask the
+        // backend to create an organization and link the profile, then re-fetch.
+        let profile = result.profile;
+        if (!profile || !profile.org_id) {
+          try {
+            await api.post("/auth/ensure-org", {
+              full_name: supabaseUser.user_metadata?.full_name,
+            });
+          } catch (e: any) {
+            console.warn("[useAuth] ensure-org failed:", e?.message || e);
+          }
+          if (seq !== loadSeqRef.current) return;
+          const refreshed = await fetchProfile(supabaseUser.id);
+          if (seq !== loadSeqRef.current) return;
+          profile = refreshed.profile || profile;
+        }
+
+        setProfile(profile);
+        const mapped = mapSupabaseUser(supabaseUser, profile);
         console.log("[useAuth] Setting user in store with role:", mapped.role);
         setUser(mapped);
       } finally {

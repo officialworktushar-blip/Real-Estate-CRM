@@ -8,12 +8,12 @@ interface DealListParams {
   stage?: string;
 }
 
-interface CreateDealData {
+export interface CreateDealData {
   title: string;
   stage?: string;
   value: number;
   expected_close_date?: string;
-  client_id?: string;
+  notes?: string;
   property_id?: string;
   lead_id?: string;
 }

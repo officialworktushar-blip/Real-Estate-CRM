@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { leadsService } from "../services/leads.service";
-import { getOrganizationId } from "../utils/helpers";
+import { getOrgScope, getWriteOrg } from "../utils/helpers";
 
 export const leadsController = {
   async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getOrgScope(req);
       const { page = "1", limit = "20", search, sort_by, sort_order } = req.query;
       const result = await leadsService.list(orgId, {
         page: Number(page),
@@ -22,7 +22,7 @@ export const leadsController = {
 
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getOrgScope(req);
       const lead = await leadsService.getById(String(req.params.id), orgId);
       res.json({ data: lead });
     } catch (err) {
@@ -32,7 +32,7 @@ export const leadsController = {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getWriteOrg(req);
       const lead = await leadsService.create(req.body, orgId);
       res.status(201).json({ data: lead, message: "Lead created" });
     } catch (err) {
@@ -42,7 +42,7 @@ export const leadsController = {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getOrgScope(req);
       const lead = await leadsService.update(String(req.params.id), req.body, orgId);
       res.json({ data: lead, message: "Lead updated" });
     } catch (err) {
@@ -52,7 +52,7 @@ export const leadsController = {
 
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getOrgScope(req);
       await leadsService.remove(String(req.params.id), orgId);
       res.json({ message: "Lead deleted" });
     } catch (err) {

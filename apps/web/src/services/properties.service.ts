@@ -11,20 +11,24 @@ interface PropertyListParams {
   sort_order?: "asc" | "desc";
 }
 
-interface CreatePropertyData {
+export interface CreatePropertyData {
   title: string;
   description?: string;
   address: string;
   city: string;
   state: string;
   zip_code: string;
+  country?: string;
   property_type: string;
   status?: string;
   price: number;
   bedrooms?: number;
   bathrooms?: number;
   square_feet?: number;
-  images?: string[];
+  lot_size?: number;
+  year_built?: number;
+  mls_number?: string;
+  features?: string[];
 }
 
 export const propertiesService = {

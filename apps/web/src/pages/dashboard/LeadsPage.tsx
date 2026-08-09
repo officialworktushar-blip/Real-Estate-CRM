@@ -4,44 +4,80 @@ import {
   Search,
   LayoutGrid,
   List,
-  MoreHorizontal,
   Phone,
   Mail,
-  MapPin,
-  Star,
+  Pencil,
+  Trash2,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent } from "@/components/common/Card";
 import { TableRowSkeleton } from "@/components/common/Skeleton";
+import { ConfirmDeleteModal } from "@/components/common/ConfirmDeleteModal";
+import { LeadFormModal } from "@/components/dashboard/forms/LeadFormModal";
 import { useLeads } from "@/hooks/useLeads";
+import { formatAmount } from "@/utils/currency";
+import { useCurrencyStore } from "@/stores/currencyStore";
+import type { Lead } from "@/types";
 
-type LeadStatus = "new" | "contacted" | "qualified" | "negotiation" | "closed" | "lost";
+type LeadStatus = "new" | "contacted" | "qualified" | "unqualified" | "converted";
 type ViewMode = "table" | "kanban";
 
 const statusConfig: Record<LeadStatus, { label: string; variant: string }> = {
   new: { label: "New", variant: "info" },
   contacted: { label: "Contacted", variant: "warning" },
   qualified: { label: "Qualified", variant: "success" },
-  negotiation: { label: "Negotiation", variant: "default" },
-  closed: { label: "Closed", variant: "success" },
-  lost: { label: "Lost", variant: "danger" },
+  unqualified: { label: "Unqualified", variant: "danger" },
+  converted: { label: "Converted", variant: "success" },
 };
 
-const kanbanColumns: LeadStatus[] = ["new", "contacted", "qualified", "negotiation", "closed", "lost"];
+const kanbanColumns: LeadStatus[] = ["new", "contacted", "qualified", "unqualified", "converted"];
 
 export function LeadsPage() {
-  const { leads, isLoading, search, setSearch, error } = useLeads();
+  const { currency, toggleCurrency } = useCurrencyStore();
+  const {
+    leads,
+    isLoading,
+    search,
+    setSearch,
+    error,
+    create,
+    update,
+    remove,
+    isSubmitting,
+    submitError,
+  } = useLeads();
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [deletingLead, setDeletingLead] = useState<Lead | null>(null);
 
   const filteredLeads = leads.filter((lead) => {
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
     return matchesStatus;
   });
 
-  const getLeadName = (lead: typeof leads[0]) => `${lead.first_name} ${lead.last_name}`;
+  const getLeadName = (lead: Lead) => lead.full_name;
+
+  const openAdd = () => {
+    setEditingLead(null);
+    setIsFormOpen(true);
+  };
+
+  const openEdit = (lead: Lead) => {
+    setEditingLead(lead);
+    setIsFormOpen(true);
+  };
+
+  const handleSubmit = async (data: Parameters<typeof create>[0]) => {
+    if (editingLead) {
+      return update(editingLead.id, data);
+    }
+    return create(data);
+  };
 
   return (
     <div className="space-y-6">
@@ -50,10 +86,19 @@ export function LeadsPage() {
           <h1 className="text-2xl font-bold text-dark-100">Leads</h1>
           <p className="text-sm text-dark-400 mt-1">{filteredLeads.length} total leads</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Lead
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleCurrency}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-800 border border-dark-700 text-sm text-dark-200 hover:border-dark-600 transition-colors"
+          >
+            <DollarSign className="h-4 w-4" />
+            {currency === "USD" ? "$ USD" : "₹ INR"}
+          </button>
+          <Button onClick={openAdd}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Lead
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -108,7 +153,6 @@ export function LeadsPage() {
                 <tr className="border-b border-dark-700">
                   <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider">Lead</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden md:table-cell">Contact</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden lg:table-cell">Location</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden lg:table-cell">Budget</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider">Status</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden xl:table-cell">Source</th>
@@ -117,10 +161,10 @@ export function LeadsPage() {
               </thead>
               <tbody className="divide-y divide-dark-700/50">
                 {isLoading
-                  ? Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} cols={7} />)
+                  ? Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} cols={6} />)
                   : filteredLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-12 text-center text-dark-500 text-sm">
+                        <td colSpan={6} className="px-4 py-12 text-center text-dark-500 text-sm">
                           {search ? "No leads match your search." : "No leads yet. Add your first lead to get started."}
                         </td>
                       </tr>
@@ -134,7 +178,7 @@ export function LeadsPage() {
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium text-dark-100 truncate">{getLeadName(lead)}</p>
-                              <p className="text-xs text-dark-400 truncate">{lead.preferred_location || lead.source}</p>
+                              <p className="text-xs text-dark-400 truncate">{lead.source || "—"}</p>
                             </div>
                           </div>
                         </td>
@@ -145,14 +189,8 @@ export function LeadsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-dark-500" />
-                            <span className="text-sm text-dark-300">{lead.preferred_location || "—"}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 hidden lg:table-cell">
                           <span className="text-sm font-medium text-dark-200">
-                            {lead.budget_min || lead.budget_max ? `$${(lead.budget_min || 0).toLocaleString()} - $${(lead.budget_max || 0).toLocaleString()}` : "—"}
+                            {lead.budget ? formatAmount(lead.budget, currency) : "—"}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -161,22 +199,39 @@ export function LeadsPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 hidden xl:table-cell">
-                          <span className="text-sm text-dark-400">{lead.source}</span>
+                          <span className="text-sm text-dark-400">{lead.source || "—"}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             {lead.phone && (
-                              <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
+                              <a
+                                href={`tel:${lead.phone}`}
+                                className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors"
+                              >
                                 <Phone className="h-4 w-4" />
-                              </button>
+                              </a>
                             )}
                             {lead.email && (
-                              <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
+                              <a
+                                href={`mailto:${lead.email}`}
+                                className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors"
+                              >
                                 <Mail className="h-4 w-4" />
-                              </button>
+                              </a>
                             )}
-                            <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <button
+                              onClick={() => openEdit(lead)}
+                              className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors"
+                              title="Edit lead"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingLead(lead)}
+                              className="p-1.5 rounded-md text-dark-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              title="Delete lead"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -187,7 +242,7 @@ export function LeadsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {kanbanColumns.map((col) => {
             const colLeads = filteredLeads.filter((l) => l.status === col);
             return (
@@ -200,12 +255,30 @@ export function LeadsPage() {
                 </div>
                 <div className="space-y-2">
                   {colLeads.map((lead) => (
-                    <div key={lead.id} className="bg-dark-800 border border-dark-700 rounded-lg p-3 hover:border-dark-600 transition-colors cursor-pointer">
-                      <p className="text-sm font-medium text-dark-100 truncate">{getLeadName(lead)}</p>
-                      <p className="text-xs text-dark-400 mt-1">{lead.preferred_location || lead.source}</p>
+                    <div key={lead.id} className="bg-dark-800 border border-dark-700 rounded-lg p-3 hover:border-dark-600 transition-colors">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-dark-100 truncate">{getLeadName(lead)}</p>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => openEdit(lead)}
+                            className="p-1 rounded text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors"
+                            title="Edit lead"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingLead(lead)}
+                            className="p-1 rounded text-dark-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            title="Delete lead"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-dark-400 mt-1">{lead.source || "—"}</p>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs font-medium text-gold-400">
-                          {lead.budget_max ? `$${lead.budget_max.toLocaleString()}` : "—"}
+                          {lead.budget ? formatAmount(lead.budget, currency) : "—"}
                         </span>
                       </div>
                       {lead.notes && (
@@ -213,12 +286,35 @@ export function LeadsPage() {
                       )}
                     </div>
                   ))}
+                  {colLeads.length === 0 && (
+                    <div className="flex items-center justify-center h-16 text-xs text-dark-500 border border-dashed border-dark-700 rounded-lg">
+                      No leads
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <LeadFormModal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSubmit={handleSubmit}
+        initialData={editingLead}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deletingLead}
+        onClose={() => setDeletingLead(null)}
+        onConfirm={() => (deletingLead ? remove(deletingLead.id) : Promise.resolve(false))}
+        title="Delete Lead"
+        message={`Are you sure you want to delete ${deletingLead ? `"${deletingLead.full_name}"` : "this lead"}? This action cannot be undone.`}
+        isDeleting={isSubmitting}
+      />
     </div>
   );
 }

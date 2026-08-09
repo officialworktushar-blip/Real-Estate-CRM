@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { authController } from "../controllers/auth.controller";
-import { validate } from "../middleware/validate";
-import { loginSchema, registerSchema, forgotPasswordSchema } from "../validators";
+import { auth } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/login", validate(loginSchema), authController.login);
-router.post("/register", validate(registerSchema), authController.register);
-router.post("/forgot-password", validate(forgotPasswordSchema), authController.forgotPassword);
+router.post("/login", authController.login);
+router.post("/register", authController.register);
+router.post("/forgot-password", authController.forgotPassword);
 router.post("/logout", authController.logout);
+router.post("/ensure-org", auth, authController.ensureOrg);
 
 export default router;

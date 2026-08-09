@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { propertiesService } from "../services/properties.service";
-import { getOrganizationId } from "../utils/helpers";
+import { getOrgScope, getWriteOrg } from "../utils/helpers";
 
 export const propertiesController = {
   async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getOrgScope(req);
       const { page = "1", limit = "20", search } = req.query;
       const result = await propertiesService.list(orgId, {
         page: Number(page),
@@ -20,7 +20,7 @@ export const propertiesController = {
 
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getOrgScope(req);
       const property = await propertiesService.getById(String(req.params.id), orgId);
       res.json({ data: property });
     } catch (err) {
@@ -30,7 +30,7 @@ export const propertiesController = {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getWriteOrg(req);
       const property = await propertiesService.create(req.body, orgId);
       res.status(201).json({ data: property, message: "Property created" });
     } catch (err) {
@@ -40,7 +40,7 @@ export const propertiesController = {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getOrgScope(req);
       const property = await propertiesService.update(String(req.params.id), req.body, orgId);
       res.json({ data: property, message: "Property updated" });
     } catch (err) {
@@ -50,7 +50,7 @@ export const propertiesController = {
 
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
-      const orgId = getOrganizationId(req);
+      const orgId = getOrgScope(req);
       await propertiesService.remove(String(req.params.id), orgId);
       res.json({ message: "Property deleted" });
     } catch (err) {

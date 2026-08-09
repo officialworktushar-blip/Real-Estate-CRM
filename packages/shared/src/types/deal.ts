@@ -1,11 +1,8 @@
 export type DealStage =
   | "lead"
-  | "contacted"
-  | "meeting"
   | "proposal"
   | "negotiation"
-  | "under_contract"
-  | "closing"
+  | "contract"
   | "closed_won"
   | "closed_lost";
 

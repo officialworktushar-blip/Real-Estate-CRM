@@ -42,12 +42,21 @@ function toContract(row: ActivityRow) {
   };
 }
 
+function toActivityPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const row: Record<string, unknown> = { ...payload };
+  if (row.event_type && !row.type) row.type = row.event_type;
+  if (row.start_time && !row.due_date) row.due_date = row.start_time;
+  delete row.event_type;
+  delete row.start_time;
+  delete row.end_time;
+  delete row.location;
+  return row;
+}
+
 export const calendarService = {
-  async list(orgId: string, _userId: string, range: DateRange) {
-    let query = supabaseAdmin
-      .from(ACTIVITIES_TABLE)
-      .select("*")
-      .eq("org_id", orgId);
+  async list(orgId: string | null, _userId: string, range: DateRange) {
+    let query = supabaseAdmin.from(ACTIVITIES_TABLE).select("*");
+    if (orgId) query = query.eq("org_id", orgId);
 
     if (range.start) query = query.gte("due_date", range.start);
     if (range.end) query = query.lte("due_date", range.end);
@@ -55,75 +64,52 @@ export const calendarService = {
     const { data, error } = await query.order("due_date", { ascending: true });
 
     if (error) {
-      console.warn(
-        "[calendar] activities query failed, returning empty result:",
-        error.message
-      );
+      console.warn("[calendar] list failed, returning []:", error.message);
       return [];
     }
-    return (data as ActivityRow[])?.map(toContract) || [];
+
+    return (data || []).map(toContract);
   },
 
-  async getById(id: string, orgId: string) {
-    const { data, error } = await supabaseAdmin
-      .from(ACTIVITIES_TABLE)
-      .select("*")
-      .eq("id", id)
-      .eq("org_id", orgId)
-      .single();
+  async getById(id: string, orgId: string | null) {
+    let query = supabaseAdmin.from(ACTIVITIES_TABLE).select("*").eq("id", id);
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { data, error } = await query.maybeSingle();
     if (error || !data) throw createAppError("Event not found", 404, "NOT_FOUND");
-    return toContract(data as ActivityRow);
+    return toContract(data);
   },
 
-  async create(payload: Record<string, unknown>, orgId: string, userId: string) {
-    const row = {
-      title: payload.title,
-      description: payload.description ?? null,
-      type: payload.event_type ?? "meeting",
-      due_date: payload.start_time ?? null,
-      performed_by: userId,
-      org_id: orgId,
-    };
-
+  async create(payload: Record<string, unknown>, orgId: string | null, userId: string) {
+    if (!orgId) throw createAppError("No organization linked to this account", 400, "NO_ORGANIZATION");
     const { data, error } = await supabaseAdmin
       .from(ACTIVITIES_TABLE)
-      .insert(row)
+      .insert({ ...toActivityPayload(payload), org_id: orgId, performed_by: userId })
       .select()
       .single();
 
     if (error) throw createAppError(error.message, 400, "CREATE_FAILED");
-    return toContract(data as ActivityRow);
+    return toContract(data);
   },
 
-  async update(id: string, payload: Record<string, unknown>, orgId: string) {
-    const row: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
-    if ("title" in payload) row.title = payload.title;
-    if ("description" in payload) row.description = payload.description ?? null;
-    if ("event_type" in payload) row.type = payload.event_type;
-    if ("start_time" in payload) row.due_date = payload.start_time;
-
-    const { data, error } = await supabaseAdmin
+  async update(id: string, payload: Record<string, unknown>, orgId: string | null) {
+    let query = supabaseAdmin
       .from(ACTIVITIES_TABLE)
-      .update(row)
-      .eq("id", id)
-      .eq("org_id", orgId)
-      .select()
-      .single();
+      .update({ ...toActivityPayload(payload), updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { data, error } = await query.select().single();
     if (error) throw createAppError(error.message, 400, "UPDATE_FAILED");
-    return toContract(data as ActivityRow);
+    return toContract(data);
   },
 
-  async remove(id: string, orgId: string) {
-    const { error } = await supabaseAdmin
-      .from(ACTIVITIES_TABLE)
-      .delete()
-      .eq("id", id)
-      .eq("org_id", orgId);
+  async remove(id: string, orgId: string | null) {
+    let query = supabaseAdmin.from(ACTIVITIES_TABLE).delete().eq("id", id);
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { data, error } = await query.select().single();
     if (error) throw createAppError(error.message, 400, "DELETE_FAILED");
+    return data;
   },
 };

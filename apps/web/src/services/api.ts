@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/stores/authStore";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
@@ -9,6 +10,32 @@ interface CacheEntry {
 
 const responseCache = new Map<string, CacheEntry>();
 const inFlight = new Map<string, Promise<unknown>>();
+
+export class ApiError extends Error {
+  code?: string;
+  details?: Record<string, string[]>;
+
+  constructor(message: string, code?: string, details?: Record<string, string[]>) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.details = details;
+  }
+}
+
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error) {
+    if (err instanceof ApiError && err.details) {
+      const fieldMessages = Object.entries(err.details)
+        .map(([field, list]) => `${field}: ${list.join(", ")}`);
+      if (fieldMessages.length > 0) {
+        return fieldMessages.join("; ");
+      }
+    }
+    return err.message;
+  }
+  return fallback;
+}
 
 class ApiClient {
   private baseUrl: string;
@@ -67,7 +94,11 @@ class ApiClient {
       const error = await response
         .json()
         .catch(() => ({ message: "Request failed" }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      throw new ApiError(
+        error.message || `HTTP ${response.status}`,
+        error.code,
+        error.details
+      );
     }
 
     const data = await response.json();
@@ -88,7 +119,8 @@ class ApiClient {
     cacheTtlMs = 0
   ): Promise<T> {
     const method = options.method || "GET";
-    const key = this.cacheKey(method, endpoint);
+    const url = method === "GET" ? this.withOrgScope(endpoint) : endpoint;
+    const key = this.cacheKey(method, url);
 
     if (method === "GET" && cacheTtlMs > 0) {
       const cached = this.getCachedValue<T>(key);
@@ -98,7 +130,7 @@ class ApiClient {
     const existing = inFlight.get(key);
     if (existing) return existing as Promise<T>;
 
-    const promise = this.performRequest<T>(endpoint, options, cacheTtlMs).finally(
+    const promise = this.performRequest<T>(url, options, cacheTtlMs).finally(
       () => {
         inFlight.delete(key);
       }
@@ -143,6 +175,19 @@ class ApiClient {
         responseCache.delete(key);
       }
     }
+  }
+
+  /**
+   * Normal (non super_admin) users are scoped to their own organization: an
+   * `org_id` query param is appended to every GET so the backend only returns
+   * rows belonging to that org. Super admins omit it so they see all data.
+   */
+  private withOrgScope(endpoint: string): string {
+    const { user } = useAuthStore.getState();
+    const orgId = user?.org_id;
+    if (!orgId || user?.role === "super_admin") return endpoint;
+    const sep = endpoint.includes("?") ? "&" : "?";
+    return `${endpoint}${sep}org_id=${encodeURIComponent(orgId)}`;
   }
 }
 

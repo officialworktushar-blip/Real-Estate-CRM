@@ -2,10 +2,8 @@ export const LEAD_STATUSES = [
   "new",
   "contacted",
   "qualified",
-  "proposal",
-  "negotiation",
-  "closed_won",
-  "closed_lost",
+  "unqualified",
+  "converted",
 ] as const;
 
 export const LEAD_SOURCES = [
@@ -20,12 +18,9 @@ export const LEAD_SOURCES = [
 
 export const DEAL_STAGES = [
   "lead",
-  "contacted",
-  "meeting",
   "proposal",
   "negotiation",
-  "under_contract",
-  "closing",
+  "contract",
   "closed_won",
   "closed_lost",
 ] as const;

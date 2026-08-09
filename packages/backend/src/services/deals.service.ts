@@ -9,14 +9,14 @@ interface ListOptions {
 }
 
 export const dealsService = {
-  async list(orgId: string, options: ListOptions) {
+  async list(orgId: string | null, options: ListOptions) {
     const { page, limit, search, stage } = options;
     const offset = (page - 1) * limit;
 
     let query = supabaseAdmin
       .from("deals")
-      .select("*, leads(full_name, email, phone), properties(title, address, price)", { count: "exact" })
-      .eq("org_id", orgId);
+      .select("*, leads(full_name, email, phone), properties(title, address, price)", { count: "exact" });
+    if (orgId) query = query.eq("org_id", orgId);
 
     if (search) {
       query = query.ilike("title", `%${search}%`);
@@ -37,19 +37,20 @@ export const dealsService = {
     };
   },
 
-  async getById(id: string, orgId: string) {
-    const { data, error } = await supabaseAdmin
+  async getById(id: string, orgId: string | null) {
+    let query = supabaseAdmin
       .from("deals")
       .select("*, leads(*), properties(*)")
-      .eq("id", id)
-      .eq("org_id", orgId)
-      .single();
+      .eq("id", id);
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { data, error } = await query.maybeSingle();
     if (error || !data) throw createAppError("Deal not found", 404, "NOT_FOUND");
     return data;
   },
 
-  async create(payload: Record<string, unknown>, orgId: string) {
+  async create(payload: Record<string, unknown>, orgId: string | null) {
+    if (!orgId) throw createAppError("No organization linked to this account", 400, "NO_ORGANIZATION");
     const { data, error } = await supabaseAdmin
       .from("deals")
       .insert({ ...toDealsPayload(payload), org_id: orgId })
@@ -60,26 +61,23 @@ export const dealsService = {
     return data;
   },
 
-  async update(id: string, payload: Record<string, unknown>, orgId: string) {
-    const { data, error } = await supabaseAdmin
+  async update(id: string, payload: Record<string, unknown>, orgId: string | null) {
+    let query = supabaseAdmin
       .from("deals")
       .update({ ...toDealsPayload(payload), updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .eq("org_id", orgId)
-      .select()
-      .single();
+      .eq("id", id);
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { data, error } = await query.select().single();
     if (error) throw createAppError(error.message, 400, "UPDATE_FAILED");
     return data;
   },
 
-  async remove(id: string, orgId: string) {
-    const { error } = await supabaseAdmin
-      .from("deals")
-      .delete()
-      .eq("id", id)
-      .eq("org_id", orgId);
+  async remove(id: string, orgId: string | null) {
+    let query = supabaseAdmin.from("deals").delete().eq("id", id);
+    if (orgId) query = query.eq("org_id", orgId);
 
+    const { error } = await query;
     if (error) throw createAppError(error.message, 400, "DELETE_FAILED");
   },
 };

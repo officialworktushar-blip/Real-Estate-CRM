@@ -9,17 +9,14 @@ interface LeadListParams {
   sort_order?: "asc" | "desc";
 }
 
-interface CreateLeadData {
-  first_name: string;
-  last_name: string;
+export interface CreateLeadData {
+  full_name: string;
   email?: string;
   phone?: string;
   status?: string;
   source?: string;
   notes?: string;
-  budget_min?: number;
-  budget_max?: number;
-  preferred_location?: string;
+  budget?: number;
 }
 
 export const leadsService = {

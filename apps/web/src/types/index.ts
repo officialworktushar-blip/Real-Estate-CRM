@@ -32,58 +32,86 @@ export interface AppState {
 
 export interface Lead {
   id: string;
-  first_name: string;
-  last_name: string;
+  org_id?: string;
+  full_name: string;
   email?: string;
   phone?: string;
   status: string;
-  source: string;
+  source?: string;
   notes?: string;
-  budget_min?: number;
-  budget_max?: number;
-  preferred_location?: string;
+  assigned_to?: string;
+  budget?: number;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface Property {
   id: string;
+  org_id?: string;
   title: string;
   description?: string;
   address: string;
   city: string;
   state: string;
   zip_code: string;
+  country?: string;
   property_type: string;
   status: string;
   price: number;
   bedrooms?: number;
   bathrooms?: number;
   square_feet?: number;
+  lot_size?: number;
+  year_built?: number;
+  mls_number?: string;
   images?: string[];
+  features?: string[];
+  listed_by?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface Client {
   id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
+  org_id?: string;
+  full_name: string;
+  email?: string;
   phone?: string;
-  client_type: string;
-  total_transactions: number;
-  lifetime_value: number;
+  type: string;
+  notes?: string;
+  assigned_to?: string;
   created_at: string;
+  updated_at?: string;
+}
+
+export interface DealLeadRef {
+  full_name: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface DealPropertyRef {
+  title: string;
+  address?: string;
+  price?: number;
 }
 
 export interface Deal {
   id: string;
+  org_id?: string;
   title: string;
+  property_id?: string;
+  lead_id?: string;
   stage: string;
   value: number;
   expected_close_date?: string;
-  clients?: { first_name: string; last_name: string };
+  actual_close_date?: string;
+  notes?: string;
+  assigned_to?: string;
   created_at: string;
+  updated_at?: string;
+  leads?: DealLeadRef | null;
+  properties?: DealPropertyRef | null;
 }
 
 export interface CalendarEvent {

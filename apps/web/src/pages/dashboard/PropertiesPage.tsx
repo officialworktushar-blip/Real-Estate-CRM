@@ -9,34 +9,52 @@ import {
   Bath,
   Square,
   DollarSign,
-  MoreHorizontal,
-  Heart,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent } from "@/components/common/Card";
 import { TableRowSkeleton } from "@/components/common/Skeleton";
+import { ConfirmDeleteModal } from "@/components/common/ConfirmDeleteModal";
+import { PropertyFormModal } from "@/components/dashboard/forms/PropertyFormModal";
 import { useProperties } from "@/hooks/useProperties";
 import { formatAmount } from "@/utils/currency";
 import { useCurrencyStore } from "@/stores/currencyStore";
+import type { Property } from "@/types";
 
-type PropertyStatus = "available" | "pending" | "sold" | "off_market";
+type PropertyStatus = "available" | "pending" | "sold" | "rented" | "off_market";
 type ViewMode = "grid" | "table";
 
 const statusConfig: Record<PropertyStatus, { label: string; variant: string }> = {
   available: { label: "Available", variant: "success" },
   pending: { label: "Pending", variant: "warning" },
   sold: { label: "Sold", variant: "default" },
+  rented: { label: "Rented", variant: "info" },
   off_market: { label: "Off Market", variant: "danger" },
 };
 
 export function PropertiesPage() {
   const { currency, toggleCurrency } = useCurrencyStore();
-  const { properties, isLoading, search, setSearch, error } = useProperties();
+  const {
+    properties,
+    isLoading,
+    search,
+    setSearch,
+    error,
+    create,
+    update,
+    remove,
+    isSubmitting,
+    submitError,
+  } = useProperties();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [statusFilter, setStatusFilter] = useState<PropertyStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState("All");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [deletingProperty, setDeletingProperty] = useState<Property | null>(null);
 
   const propertyTypes = ["All", ...new Set(properties.map((p) => p.property_type))];
 
@@ -45,6 +63,23 @@ export function PropertiesPage() {
     const matchType = typeFilter === "All" || p.property_type === typeFilter;
     return matchStatus && matchType;
   });
+
+  const openAdd = () => {
+    setEditingProperty(null);
+    setIsFormOpen(true);
+  };
+
+  const openEdit = (prop: Property) => {
+    setEditingProperty(prop);
+    setIsFormOpen(true);
+  };
+
+  const handleSubmit = async (data: Parameters<typeof create>[0]) => {
+    if (editingProperty) {
+      return update(editingProperty.id, data);
+    }
+    return create(data);
+  };
 
   return (
     <div className="space-y-6">
@@ -61,7 +96,7 @@ export function PropertiesPage() {
             <DollarSign className="h-4 w-4" />
             {currency === "USD" ? "$ USD" : "₹ INR"}
           </button>
-          <Button>
+          <Button onClick={openAdd}>
             <Plus className="h-4 w-4 mr-2" />
             Add Property
           </Button>
@@ -140,10 +175,10 @@ export function PropertiesPage() {
             </div>
           ) : (
             filtered.map((prop) => (
-              <div key={prop.id} className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden hover:border-dark-600 transition-all cursor-pointer group">
+              <div key={prop.id} className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden hover:border-dark-600 transition-all">
                 <div className="relative h-48 overflow-hidden bg-dark-700">
                   {prop.images && prop.images.length > 0 ? (
-                    <img src={prop.images[0]} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img src={prop.images[0]} alt={prop.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-dark-500">
                       <MapPin className="h-12 w-12" />
@@ -154,9 +189,6 @@ export function PropertiesPage() {
                       {statusConfig[prop.status as PropertyStatus]?.label || prop.status}
                     </Badge>
                   </div>
-                  <button className="absolute top-3 right-3 p-2 rounded-full bg-dark-900/60 text-dark-200 hover:text-red-400 transition-colors">
-                    <Heart className="h-4 w-4" />
-                  </button>
                   <div className="absolute bottom-3 left-3">
                     <p className="text-xl font-bold text-white drop-shadow-lg">{formatAmount(prop.price, currency)}</p>
                   </div>
@@ -180,6 +212,22 @@ export function PropertiesPage() {
                       <Square className="h-3.5 w-3.5 text-dark-500" />
                       <span className="text-xs text-dark-300">{(prop.square_feet || 0).toLocaleString()} sqft</span>
                     </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-1 pt-2 border-t border-dark-700/50">
+                    <button
+                      onClick={() => openEdit(prop)}
+                      className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors"
+                      title="Edit property"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeletingProperty(prop)}
+                      className="p-1.5 rounded-md text-dark-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      title="Delete property"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -246,9 +294,22 @@ export function PropertiesPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openEdit(prop)}
+                              className="p-1.5 rounded-md text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors"
+                              title="Edit property"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingProperty(prop)}
+                              className="p-1.5 rounded-md text-dark-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              title="Delete property"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -257,6 +318,24 @@ export function PropertiesPage() {
           </CardContent>
         </Card>
       )}
+
+      <PropertyFormModal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSubmit={handleSubmit}
+        initialData={editingProperty}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deletingProperty}
+        onClose={() => setDeletingProperty(null)}
+        onConfirm={() => (deletingProperty ? remove(deletingProperty.id) : Promise.resolve(false))}
+        title="Delete Property"
+        message={`Are you sure you want to delete ${deletingProperty ? `"${deletingProperty.title}"` : "this property"}? This action cannot be undone.`}
+        isDeleting={isSubmitting}
+      />
     </div>
   );
 }

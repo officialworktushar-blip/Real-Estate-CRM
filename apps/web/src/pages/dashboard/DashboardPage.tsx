@@ -50,11 +50,11 @@ export function DashboardPage() {
 
   const recentLeads = safeLeads.slice(0, 5).map((lead) => ({
     id: lead.id,
-    name: `${lead.first_name || ""} ${lead.last_name || ""}`.trim(),
+    name: lead.full_name || "",
     email: lead.email || "",
-    source: lead.source,
+    source: lead.source || "",
     status: lead.status,
-    budget: lead.budget_max || lead.budget_min || 0,
+    budget: lead.budget || 0,
     created_at: lead.created_at,
   }));
 
@@ -83,7 +83,8 @@ export function DashboardPage() {
       case "new": return "info";
       case "qualified": return "success";
       case "contacted": return "warning";
-      case "negotiation": return "default";
+      case "unqualified": return "default";
+      case "converted": return "success";
       default: return "default";
     }
   };
