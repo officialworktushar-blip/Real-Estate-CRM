@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase";
 import { createAppError } from "../middleware/errorHandler";
+import { emailService } from "./email.service";
 
 function slugify(value: string): string {
   const slug = value
@@ -104,6 +105,9 @@ export const authService = {
       email: payload.email,
       company: payload.company,
     });
+
+    // Fire-and-forget welcome email; failures are logged, never block registration.
+    void emailService.sendWelcome(payload.email, payload.full_name);
 
     const { data: session } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",

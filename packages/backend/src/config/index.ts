@@ -22,7 +22,12 @@ export const config = {
   },
   email: {
     from: process.env.EMAIL_FROM || "Oryntal Estate <support.oryntal@agency.org.in>",
-    resendApiKey: process.env.RESEND_API_KEY || "",
+    smtp: {
+      host: process.env.SMTP_HOST || "",
+      port: parseInt(process.env.SMTP_PORT || "465", 10),
+      user: process.env.SMTP_USER || "",
+      pass: process.env.SMTP_PASS || "",
+    },
   },
   frontend: {
     url: process.env.FRONTEND_URL || "http://localhost:5173",
