@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { config } from "./index";
+import { logger } from "../utils/logger";
 
 const missing = !config.supabase.url || !config.supabase.serviceRoleKey;
 if (missing) {
-  console.warn(
+  logger.warn(
     "[supabase] Credentials missing. Using placeholder URL - API calls will fail. " +
       "Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in packages/backend/.env"
   );

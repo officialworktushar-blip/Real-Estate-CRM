@@ -7,17 +7,16 @@ import { cn } from "@/utils/helpers";
 export function Topbar() {
   const { user, isGuest, logout } = useAuth();
   const { toggleMobileMenu, sidebarOpen } = useAppStore();
-  const sidebarWidth = sidebarOpen ? 256 : 64;
 
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 z-30 h-16",
+        "fixed top-0 right-0 z-30 h-16 left-0",
         "bg-dark-900/80 backdrop-blur-xl border-b border-dark-700",
         "flex items-center justify-between px-4 md:px-6",
-        "transition-all duration-300"
+        "transition-all duration-300",
+        sidebarOpen ? "md:left-[256px]" : "md:left-[64px]"
       )}
-      style={{ left: `${sidebarWidth}px` }}
     >
       <div className="flex items-center gap-3">
         <button

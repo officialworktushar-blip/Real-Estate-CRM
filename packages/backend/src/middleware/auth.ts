@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { supabaseAdmin } from "../config/supabase";
 import { createAppError } from "./errorHandler";
+import { logger } from "../utils/logger";
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -14,19 +15,15 @@ export async function auth(req: AuthRequest, _res: Response, next: NextFunction)
     const token = authHeader?.replace(/^Bearer\s+/i, "");
 
     if (!authHeader || !token) {
-      console.warn(
+      logger.warn(
         `[auth] No Authorization header for ${req.method} ${req.originalUrl}`
       );
       return next(createAppError("No token provided", 401, "UNAUTHORIZED"));
     }
 
-    console.log(
-      `[auth] Authorization header received for ${req.method} ${req.originalUrl} (token length ${token.length})`
-    );
-
     const { data, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !data.user) {
-      console.error(
+      logger.warn(
         `[auth] Token verification FAILED for ${req.method} ${req.originalUrl}: ${
           error?.message || "No user returned"
         }`
@@ -34,7 +31,7 @@ export async function auth(req: AuthRequest, _res: Response, next: NextFunction)
       return next(createAppError("Invalid token", 401, "UNAUTHORIZED"));
     }
 
-    console.log(`[auth] Token verified for user: ${data.user.id}`);
+    logger.debug(`[auth] Token verified for user: ${data.user.id}`);
 
     const { data: profile } = await supabaseAdmin
       .from("profiles")
@@ -46,13 +43,13 @@ export async function auth(req: AuthRequest, _res: Response, next: NextFunction)
     req.userRole = profile?.role || "user";
     req.organizationId = profile?.org_id;
 
-    console.log(
+    logger.debug(
       `[auth] User ${req.userId} verified with role "${req.userRole}" (org ${req.organizationId || "none"})`
     );
 
     next();
   } catch (err) {
-    console.error("[auth] Authentication failed with unexpected error:", err);
+    logger.error("[auth] Authentication failed with unexpected error:", err);
     next(createAppError("Authentication failed", 401, "UNAUTHORIZED"));
   }
 }

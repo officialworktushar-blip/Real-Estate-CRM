@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { clientsService } from "@/services/clients.service";
 import { apiErrorMessage } from "@/services/api";
+import { toast } from "@/stores/toastStore";
 import type { CreateClientData } from "@/services/clients.service";
 import type { Client, PaginatedResponse } from "@/types";
 
@@ -42,9 +43,11 @@ export function useClients() {
         await clientsService.create(data);
         setPage(1);
         await fetchClients(1, search);
+        toast("success", "Client created successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to create client"));
+        toast("error", apiErrorMessage(err, "Failed to create client"));
         return false;
       } finally {
         setIsSubmitting(false);
@@ -60,9 +63,11 @@ export function useClients() {
       try {
         await clientsService.update(id, data);
         await refetch();
+        toast("success", "Client updated successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to update client"));
+        toast("error", apiErrorMessage(err, "Failed to update client"));
         return false;
       } finally {
         setIsSubmitting(false);
@@ -78,9 +83,11 @@ export function useClients() {
       try {
         await clientsService.remove(id);
         await refetch();
+        toast("success", "Client deleted successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to delete client"));
+        toast("error", apiErrorMessage(err, "Failed to delete client"));
         return false;
       } finally {
         setIsSubmitting(false);

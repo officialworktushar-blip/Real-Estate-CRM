@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { dealsService } from "@/services/deals.service";
 import { apiErrorMessage } from "@/services/api";
+import { toast } from "@/stores/toastStore";
 import type { CreateDealData } from "@/services/deals.service";
 import type { Deal, PaginatedResponse } from "@/types";
 
@@ -62,9 +63,11 @@ export function useDeals() {
         await dealsService.create(data);
         setPage(1);
         await fetchDeals(1, search, stage);
+        toast("success", "Deal created successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to create deal"));
+        toast("error", apiErrorMessage(err, "Failed to create deal"));
         return false;
       } finally {
         setIsSubmitting(false);
@@ -80,9 +83,11 @@ export function useDeals() {
       try {
         await dealsService.update(id, data);
         await refetch();
+        toast("success", "Deal updated successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to update deal"));
+        toast("error", apiErrorMessage(err, "Failed to update deal"));
         return false;
       } finally {
         setIsSubmitting(false);
@@ -98,9 +103,11 @@ export function useDeals() {
       try {
         await dealsService.remove(id);
         await refetch();
+        toast("success", "Deal deleted successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to delete deal"));
+        toast("error", apiErrorMessage(err, "Failed to delete deal"));
         return false;
       } finally {
         setIsSubmitting(false);

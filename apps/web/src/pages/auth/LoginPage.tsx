@@ -31,8 +31,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      const role = useAuthStore.getState().profile?.role;
-      console.log("[LoginPage] Post-login role:", role);
+      const role = useAuthStore.getState().user?.role;
       navigate(role === "super_admin" ? "/admin" : "/dashboard");
     } catch (err) {
       setError(friendlyError(err));

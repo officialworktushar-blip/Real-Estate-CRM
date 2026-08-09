@@ -8,13 +8,6 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
-  console.log(
-    "[ProtectedRoute] user:",
-    user?.id ?? null,
-    "| isLoading:",
-    isLoading
-  );
-
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">

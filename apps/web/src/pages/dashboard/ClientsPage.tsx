@@ -18,6 +18,7 @@ import { Badge } from "@/components/common/Badge";
 import { Card, CardContent } from "@/components/common/Card";
 import { TableRowSkeleton, StatsCardSkeleton } from "@/components/common/Skeleton";
 import { ConfirmDeleteModal } from "@/components/common/ConfirmDeleteModal";
+import { EmptyState } from "@/components/common/EmptyState";
 import { ClientFormModal } from "@/components/dashboard/forms/ClientFormModal";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { useClients } from "@/hooks/useClients";
@@ -163,8 +164,17 @@ export function ClientsPage() {
                 ? Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} cols={5} />)
                 : filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-12 text-center text-dark-500 text-sm">
-                        {search ? "No clients match your search." : "No clients yet. Add your first client to get started."}
+                      <td colSpan={5} className="px-4">
+                        <EmptyState
+                          className="py-10"
+                          icon={<Users className="h-6 w-6" />}
+                          title={search ? "No clients match your search" : "No clients yet"}
+                          description={
+                            search
+                              ? "Try adjusting your search terms."
+                              : "Add your first client to get started."
+                          }
+                        />
                       </td>
                     </tr>
                   )

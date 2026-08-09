@@ -35,8 +35,7 @@ export function RegisterPage() {
       setSuccess("Account created successfully. You can now sign in.");
       setTimeout(() => {
         if (signedIn) {
-          const role = useAuthStore.getState().profile?.role;
-          console.log("[RegisterPage] Post-register role:", role);
+          const role = useAuthStore.getState().user?.role;
           navigate(role === "super_admin" ? "/admin" : "/dashboard");
         } else {
           navigate(

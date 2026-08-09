@@ -16,6 +16,7 @@ import { Badge } from "@/components/common/Badge";
 import { Card, CardContent } from "@/components/common/Card";
 import { TableRowSkeleton } from "@/components/common/Skeleton";
 import { ConfirmDeleteModal } from "@/components/common/ConfirmDeleteModal";
+import { EmptyState } from "@/components/common/EmptyState";
 import { LeadFormModal } from "@/components/dashboard/forms/LeadFormModal";
 import { useLeads } from "@/hooks/useLeads";
 import { formatAmount } from "@/utils/currency";
@@ -164,8 +165,17 @@ export function LeadsPage() {
                   ? Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} cols={6} />)
                   : filteredLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-12 text-center text-dark-500 text-sm">
-                          {search ? "No leads match your search." : "No leads yet. Add your first lead to get started."}
+                        <td colSpan={6} className="px-4">
+                          <EmptyState
+                            className="py-10"
+                            icon={<Phone className="h-6 w-6" />}
+                            title={search ? "No leads match your search" : "No leads yet"}
+                            description={
+                              search
+                                ? "Try adjusting your search terms."
+                                : "Add your first lead to get started."
+                            }
+                          />
                         </td>
                       </tr>
                     )

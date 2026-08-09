@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { propertiesService } from "@/services/properties.service";
 import { apiErrorMessage } from "@/services/api";
+import { toast } from "@/stores/toastStore";
 import type { CreatePropertyData } from "@/services/properties.service";
 import type { Property, PaginatedResponse } from "@/types";
 
@@ -42,9 +43,11 @@ export function useProperties() {
         await propertiesService.create(data);
         setPage(1);
         await fetchProperties(1, search);
+        toast("success", "Property added successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to create property"));
+        toast("error", apiErrorMessage(err, "Failed to create property"));
         return false;
       } finally {
         setIsSubmitting(false);
@@ -60,9 +63,11 @@ export function useProperties() {
       try {
         await propertiesService.update(id, data);
         await refetch();
+        toast("success", "Property updated successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to update property"));
+        toast("error", apiErrorMessage(err, "Failed to update property"));
         return false;
       } finally {
         setIsSubmitting(false);
@@ -78,9 +83,11 @@ export function useProperties() {
       try {
         await propertiesService.remove(id);
         await refetch();
+        toast("success", "Property deleted successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to delete property"));
+        toast("error", apiErrorMessage(err, "Failed to delete property"));
         return false;
       } finally {
         setIsSubmitting(false);

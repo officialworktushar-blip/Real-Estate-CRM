@@ -2,12 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 export function HomeRedirect() {
-  const { user, profile, isLoading } = useAuth();
-
-  console.log("Auth loading:", isLoading);
-  console.log("User:", user);
-  console.log("Profile:", profile);
-  console.log("Role:", profile?.role);
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -21,10 +16,9 @@ export function HomeRedirect() {
     return <Navigate to="/auth/login" replace />;
   }
 
-  console.log("[HomeRedirect] Routing by role:", profile?.role ?? user.role);
   return (
     <Navigate
-      to={profile?.role === "super_admin" ? "/admin" : "/dashboard"}
+      to={user.role === "super_admin" ? "/admin" : "/dashboard"}
       replace
     />
   );

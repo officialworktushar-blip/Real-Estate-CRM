@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { type CurrencyCode, detectCountry } from "@/utils/currency";
+import { toast } from "@/stores/toastStore";
 
 interface CurrencyStore {
   currency: CurrencyCode;
@@ -12,10 +13,15 @@ export const useCurrencyStore = create<CurrencyStore>()(
   persist(
     (set, get) => ({
       currency: detectCountry(),
-      setCurrency: (currency) => set({ currency }),
+      setCurrency: (currency) => {
+        set({ currency });
+        toast("info", `Currency set to ${currency}`);
+      },
       toggleCurrency: () => {
         const current = get().currency;
-        set({ currency: current === "USD" ? "INR" : "USD" });
+        const next = current === "USD" ? "INR" : "USD";
+        set({ currency: next });
+        toast("info", `Currency switched to ${next}`);
       },
     }),
     {

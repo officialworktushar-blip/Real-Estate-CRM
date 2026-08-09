@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase";
 import { createAppError } from "../middleware/errorHandler";
+import { logger } from "../utils/logger";
 
 interface DateRange {
   start?: string;
@@ -64,7 +65,7 @@ export const calendarService = {
     const { data, error } = await query.order("due_date", { ascending: true });
 
     if (error) {
-      console.warn("[calendar] list failed, returning []:", error.message);
+      logger.warn("[calendar] list failed, returning []:", error.message);
       return [];
     }
 

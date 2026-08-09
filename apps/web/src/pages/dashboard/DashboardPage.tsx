@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { StatsCardSkeleton } from "@/components/common/Skeleton";
+import { EmptyState } from "@/components/common/EmptyState";
 import { Card, CardHeader, CardContent } from "@/components/common/Card";
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
@@ -144,7 +145,12 @@ export function DashboardPage() {
               {leadsLoading ? (
                 <div className="px-6 py-8 text-center text-dark-500 text-sm">Loading leads...</div>
               ) : recentLeads.length === 0 ? (
-                <div className="px-6 py-8 text-center text-dark-500 text-sm">No leads yet. Add your first lead to get started.</div>
+                <EmptyState
+                  className="py-8"
+                  icon={<Users className="h-5 w-5" />}
+                  title="No leads yet"
+                  description="Add your first lead to get started."
+                />
               ) : (
                 <div className="divide-y divide-dark-700/50">
                   {recentLeads.map((lead) => (

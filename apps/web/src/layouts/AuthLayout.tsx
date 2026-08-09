@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/common/BrandLogo";
 
 export function AuthLayout() {
-  const { user, profile, isGuest, isLoading } = useAuth();
+  const { user, isGuest, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -19,7 +19,7 @@ export function AuthLayout() {
   if (user && !isGuest) {
     return (
       <Navigate
-        to={profile?.role === "super_admin" ? "/admin" : "/dashboard"}
+        to={user.role === "super_admin" ? "/admin" : "/dashboard"}
         replace
       />
     );

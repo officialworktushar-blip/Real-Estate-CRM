@@ -21,11 +21,8 @@ export function AdminRoute({ children }: AdminRouteProps) {
   }
 
   if (user.role !== "super_admin") {
-    console.log("[AdminRoute] Access denied. Role:", user.role);
     return <Navigate to="/dashboard" replace />;
   }
-
-  console.log("[AdminRoute] Access granted. Role:", user.role);
 
   return <>{children}</>;
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { leadsService } from "@/services/leads.service";
 import { apiErrorMessage } from "@/services/api";
+import { toast } from "@/stores/toastStore";
 import type { CreateLeadData } from "@/services/leads.service";
 import type { Lead, PaginatedResponse } from "@/types";
 
@@ -42,9 +43,11 @@ export function useLeads() {
         await leadsService.create(data);
         setPage(1);
         await fetchLeads(1, search);
+        toast("success", "Lead created successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to create lead"));
+        toast("error", apiErrorMessage(err, "Failed to create lead"));
         return false;
       } finally {
         setIsSubmitting(false);
@@ -60,9 +63,11 @@ export function useLeads() {
       try {
         await leadsService.update(id, data);
         await refetch();
+        toast("success", "Lead updated successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to update lead"));
+        toast("error", apiErrorMessage(err, "Failed to update lead"));
         return false;
       } finally {
         setIsSubmitting(false);
@@ -78,9 +83,11 @@ export function useLeads() {
       try {
         await leadsService.remove(id);
         await refetch();
+        toast("success", "Lead deleted successfully");
         return true;
       } catch (err) {
         setSubmitError(apiErrorMessage(err, "Failed to delete lead"));
+        toast("error", apiErrorMessage(err, "Failed to delete lead"));
         return false;
       } finally {
         setIsSubmitting(false);

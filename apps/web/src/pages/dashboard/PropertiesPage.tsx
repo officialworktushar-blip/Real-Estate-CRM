@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   List,
   MapPin,
+  Home,
   Bed,
   Bath,
   Square,
@@ -18,6 +19,7 @@ import { Badge } from "@/components/common/Badge";
 import { Card, CardContent } from "@/components/common/Card";
 import { TableRowSkeleton } from "@/components/common/Skeleton";
 import { ConfirmDeleteModal } from "@/components/common/ConfirmDeleteModal";
+import { EmptyState } from "@/components/common/EmptyState";
 import { PropertyFormModal } from "@/components/dashboard/forms/PropertyFormModal";
 import { useProperties } from "@/hooks/useProperties";
 import { formatAmount } from "@/utils/currency";
@@ -170,8 +172,17 @@ export function PropertiesPage() {
               </div>
             ))
           ) : filtered.length === 0 ? (
-            <div className="col-span-full text-center py-12 text-dark-500 text-sm">
-              {search ? "No properties match your search." : "No properties yet. Add your first property to get started."}
+            <div className="col-span-full">
+              <EmptyState
+                className="py-12"
+                icon={<Home className="h-6 w-6" />}
+                title={search ? "No properties match your search" : "No properties yet"}
+                description={
+                  search
+                    ? "Try adjusting your search terms."
+                    : "Add your first property to get started."
+                }
+              />
             </div>
           ) : (
             filtered.map((prop) => (
@@ -254,8 +265,15 @@ export function PropertiesPage() {
                   ? Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} cols={7} />)
                   : filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-12 text-center text-dark-500 text-sm">
-                          {search ? "No properties match your search." : "No properties yet."}
+                        <td colSpan={7} className="px-4">
+                          <EmptyState
+                            className="py-10"
+                            icon={<Home className="h-6 w-6" />}
+                            title={search ? "No properties match your search" : "No properties yet"}
+                            description={
+                              search ? "Try adjusting your search terms." : undefined
+                            }
+                          />
                         </td>
                       </tr>
                     )

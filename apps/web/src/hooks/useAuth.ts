@@ -46,11 +46,6 @@ function mapSupabaseUser(
       ? profile.role
       : "user";
 
-  console.log("[useAuth] mapSupabaseUser detected role:", role, {
-    email: supabaseUser.email,
-    profileRole: profile?.role,
-  });
-
   return {
     id: supabaseUser.id,
     email: supabaseUser.email ?? "",
@@ -90,17 +85,12 @@ export function useAuth() {
       const seq = ++loadSeqRef.current;
       setProfileLoading(true);
 
-      console.log("[useAuth] Applying session user:", supabaseUser?.id);
-
       try {
         const result = await fetchProfile(supabaseUser.id);
 
         if (seq !== loadSeqRef.current) {
           return;
         }
-
-        console.log("[useAuth] Session user:", supabaseUser?.id);
-        console.log("[useAuth] Profile fetch result:", result);
 
         // New signups / OAuth accounts may lack a linked org (or a profile row
         // entirely) if provisioning lagged behind the auth event. Ask the
@@ -130,24 +120,9 @@ export function useAuth() {
         setProfile(profile);
         const mapped = mapSupabaseUser(supabaseUser, profile);
         setUser(mapped);
-
-        console.log(
-          "[useAuth] Final state — user:",
-          mapped.id,
-          "| profile:",
-          profile?.id ?? null,
-          "| role:",
-          mapped.role
-        );
       } finally {
         if (seq === loadSeqRef.current) {
           setProfileLoading(false);
-          console.log(
-            "[useAuth] Loading resolved — isLoading:",
-            useAuthStore.getState().isLoading,
-            "| isProfileLoading:",
-            useAuthStore.getState().isProfileLoading
-          );
         }
       }
     },
@@ -161,14 +136,8 @@ export function useAuth() {
       .getSession()
       .then(async ({ data: { session } }) => {
         if (cancelled) return;
-        console.log(
-          "[useAuth] Session restore — session user:",
-          session?.user?.id ?? null
-        );
         if (session?.user) {
           await applyUser(session.user);
-        } else {
-          console.log("[useAuth] No session found");
         }
       })
       .catch((err) => {
@@ -177,10 +146,6 @@ export function useAuth() {
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
-          console.log(
-            "[useAuth] Loading resolved — isLoading:",
-            useAuthStore.getState().isLoading
-          );
         }
       });
 
@@ -212,7 +177,6 @@ export function useAuth() {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      console.log("[useAuth] Login started, clearing cached user/role");
       setUser(null);
       setProfile(null);
 
