@@ -119,7 +119,16 @@ export function useAuth() {
         // stale null user.
         setProfile(profile);
         const mapped = mapSupabaseUser(supabaseUser, profile);
+        console.log(
+          "[OAuth] Profile loaded ->",
+          mapped.email,
+          "| role:",
+          mapped.role,
+          "| org_id:",
+          mapped.org_id ?? "null"
+        );
         setUser(mapped);
+        useGuestStore.getState().exitGuestMode();
       } finally {
         if (seq === loadSeqRef.current) {
           setProfileLoading(false);
@@ -136,6 +145,10 @@ export function useAuth() {
       .getSession()
       .then(async ({ data: { session } }) => {
         if (cancelled) return;
+        console.log(
+          "[OAuth] Session after redirect/restore:",
+          session ? `present (user=${session.user.id})` : "NULL"
+        );
         if (session?.user) {
           await applyUser(session.user);
         }
@@ -211,13 +224,16 @@ export function useAuth() {
   );
 
   const loginWithGoogle = useCallback(async () => {
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    console.log("[OAuth] Google sign-in started, redirectTo:", redirectTo);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo,
       },
     });
     if (error) {
+      console.error("[OAuth] Google sign-in failed:", error.message);
       throw new Error(
         error.message || "Google sign-in failed. Please try again."
       );
@@ -278,13 +294,16 @@ export function useAuth() {
   );
 
   const registerWithGoogle = useCallback(async () => {
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    console.log("[OAuth] Google sign-up started, redirectTo:", redirectTo);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo,
       },
     });
     if (error) {
+      console.error("[OAuth] Google sign-up failed:", error.message);
       throw new Error(
         error.message || "Google sign-up failed. Please try again."
       );
