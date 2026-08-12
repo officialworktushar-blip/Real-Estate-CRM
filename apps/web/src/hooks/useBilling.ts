@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { billingService } from "@/services/billing.service";
+import { billingService, BILLING_PLANS } from "@/services/billing.service";
 import type { Plan, Subscription } from "@/services/billing.service";
 
 function toErrorMessage(err: unknown, fallback: string): string {
@@ -7,7 +7,7 @@ function toErrorMessage(err: unknown, fallback: string): string {
 }
 
 export function useBilling() {
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plans, setPlans] = useState<Plan[]>(BILLING_PLANS);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,15 +18,29 @@ export function useBilling() {
     setIsLoading(true);
     setError(null);
 
-    Promise.all([billingService.plans(), billingService.subscription()])
+    // Fetch plans and the current subscription independently so a failure on
+    // one never hides the other. The static catalog is already rendered.
+    Promise.allSettled([billingService.plans(), billingService.subscription()])
       .then(([plansRes, subRes]) => {
         if (!active) return;
-        setPlans(plansRes.data);
-        setSubscription(subRes.data);
+
+        if (
+          plansRes.status === "fulfilled" &&
+          Array.isArray(plansRes.value.data) &&
+          plansRes.value.data.length > 0
+        ) {
+          setPlans(plansRes.value.data);
+        }
+
+        if (subRes.status === "fulfilled") {
+          setSubscription(subRes.value.data);
+        } else {
+          setError(toErrorMessage(subRes.reason, "Could not load your current plan"));
+        }
       })
-      .catch((err) => {
+      .catch(() => {
         if (!active) return;
-        setError(toErrorMessage(err, "Failed to load billing details"));
+        setError("Could not load billing details");
       })
       .finally(() => {
         if (active) setIsLoading(false);
