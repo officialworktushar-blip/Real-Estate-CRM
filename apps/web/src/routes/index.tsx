@@ -19,6 +19,11 @@ const ForgotPasswordPage = lazy(() =>
     default: m.ForgotPasswordPage,
   }))
 );
+const AuthCallbackPage = lazy(() =>
+  import("@/pages/auth/AuthCallbackPage").then((m) => ({
+    default: m.AuthCallbackPage,
+  }))
+);
 
 const DashboardPage = lazy(() =>
   import("@/pages/dashboard/DashboardPage").then((m) => ({
@@ -103,6 +108,15 @@ export function AppRoutes() {
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
       </Route>
+
+      <Route
+        path="/auth/callback"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <AuthCallbackPage />
+          </Suspense>
+        }
+      />
 
       <Route
         path="/dashboard"

@@ -3,9 +3,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/common/BrandLogo";
 
 export function AuthLayout() {
-  const { user, isGuest, isLoading } = useAuth();
+  const { user, isGuest, isLoading, isProfileLoading } = useAuth();
 
-  if (isLoading) {
+  if (isLoading || isProfileLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-dark-950">
         <div className="flex flex-col items-center gap-4">
