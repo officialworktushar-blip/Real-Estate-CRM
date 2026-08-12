@@ -17,36 +17,42 @@ export const adminBillingService = {
     const offset = (page - 1) * limit;
 
     const { data, count, error } = await supabaseAdmin
-      .from("subscriptions")
+      .from("payments")
       .select("*, organizations(name)", { count: "exact" })
-      .neq("plan", "free")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
 
+    const rows = (data || []).map((row) => ({
+      ...row,
+      // Payments are stored in paise (Razorpay native); normalize to rupees.
+      amount: (Number(row.amount) || 0) / 100,
+    }));
+
     return {
-      data,
+      data: rows,
       meta: { page, limit, total: count || 0, total_pages: Math.ceil((count || 0) / limit) },
     };
   },
 
   async revenue(_range: DateRange) {
     const { data, error } = await supabaseAdmin
-      .from("invoices")
-      .select("amount, provider, status, paid_at, created_at");
+      .from("payments")
+      .select("amount, currency, billing_provider, status, paid_at, created_at");
 
     if (error) throw createAppError(error.message, 500, "DATABASE_ERROR");
 
     const byMonth: Record<string, { stripe: number; razorpay: number; total: number }> = {};
     for (const row of data || []) {
-      if (row.status !== "paid" && row.status !== "succeeded") continue;
-      const amount = Number(row.amount) || 0;
+      if (row.status !== "succeeded" && row.status !== "paid") continue;
+      // Payments are stored in paise (Razorpay native); normalize to rupees.
+      const amount = (Number(row.amount) || 0) / 100;
       const date = new Date(row.paid_at || row.created_at);
       if (Number.isNaN(date.getTime())) continue;
       const month = date.toISOString().slice(0, 7);
       const bucket = (byMonth[month] ??= { stripe: 0, razorpay: 0, total: 0 });
-      if (row.provider === "razorpay") bucket.razorpay += amount;
+      if (row.billing_provider === "razorpay") bucket.razorpay += amount;
       else bucket.stripe += amount;
       bucket.total += amount;
     }

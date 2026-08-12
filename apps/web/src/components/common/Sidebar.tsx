@@ -30,6 +30,7 @@ const navItems = [
   { to: "/dashboard/deals", icon: Handshake, label: "Deals" },
   { to: "/dashboard/calendar", icon: Calendar, label: "Calendar" },
   { to: "/dashboard/reports", icon: BarChart3, label: "Reports" },
+  { to: "/dashboard/billing", icon: CreditCard, label: "Billing & Plans" },
   { to: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 

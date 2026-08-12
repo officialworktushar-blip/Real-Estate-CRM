@@ -11,8 +11,7 @@ import { Badge } from "@/components/common/Badge";
 import { Card, CardContent } from "@/components/common/Card";
 import { TableRowSkeleton } from "@/components/common/Skeleton";
 import { useAdminSubscriptions } from "@/hooks/useAdmin";
-import { formatAmount } from "@/utils/currency";
-import { useCurrencyStore } from "@/stores/currencyStore";
+import { formatInr } from "@/utils/currency";
 
 type SubStatus = "active" | "cancelled" | "past_due" | "trialing";
 
@@ -24,7 +23,6 @@ const statusConfig: Record<string, { label: string; variant: string; icon: React
 };
 
 export function SubscriptionsPage() {
-  const { currency } = useCurrencyStore();
   const { subscriptions, stats, isLoading, error } = useAdminSubscriptions();
 
   const activeCount = stats?.active || 0;
@@ -68,7 +66,7 @@ export function SubscriptionsPage() {
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-gold-400">{formatAmount(mrr, currency)}</p>
+            <p className="text-lg font-bold text-gold-400">{formatInr(mrr)}</p>
             <p className="text-[10px] text-dark-400 uppercase tracking-wider">MRR</p>
           </CardContent>
         </Card>
@@ -107,7 +105,7 @@ export function SubscriptionsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant={sub.plan === "enterprise" ? "warning" : sub.plan === "professional" ? "info" : "default"}>
+                          <Badge variant={sub.plan === "agency" ? "warning" : sub.plan === "growth" ? "info" : "default"}>
                             {sub.plan}
                           </Badge>
                         </td>
@@ -122,7 +120,7 @@ export function SubscriptionsPage() {
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <span className="text-sm font-semibold text-dark-200">
-                            {sub.amount ? `${formatAmount(sub.amount, currency)}/mo` : "Free"}
+                            {sub.amount ? `${formatInr(sub.amount)}/mo` : "Free"}
                           </span>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">

@@ -121,13 +121,34 @@ create table if not exists activities (
 create table if not exists subscriptions (
   id uuid primary key default uuid_generate_v4(),
   org_id uuid unique references organizations(id) on delete cascade,
-  plan text default 'free' check (plan in ('free', 'starter', 'professional', 'enterprise')),
-  status text default 'active' check (status in ('active', 'past_due', 'cancelled', 'pending')),
+  plan text default 'free' check (plan in ('free', 'starter', 'growth', 'agency')),
+  status text default 'active' check (status in ('active', 'trialing', 'past_due', 'canceled', 'cancelled', 'pending')),
+  billing_provider text default 'razorpay',
+  amount integer,
+  currency text default 'INR',
   stripe_subscription_id text,
   razorpay_subscription_id text,
   current_period_start timestamptz default now(),
   current_period_end timestamptz default now() + interval '30 days',
   created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Payments ledger (Razorpay orders / payment attempts; amounts in paise)
+create table if not exists payments (
+  id uuid primary key default uuid_generate_v4(),
+  org_id uuid not null references organizations(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete set null,
+  plan text not null check (plan in ('starter', 'growth', 'agency')),
+  amount integer not null,
+  currency text not null default 'INR',
+  billing_provider text not null default 'razorpay',
+  razorpay_order_id text,
+  razorpay_payment_id text,
+  razorpay_signature text,
+  status text not null default 'created' check (status in ('created', 'pending', 'succeeded', 'failed', 'refunded')),
+  created_at timestamptz default now(),
+  paid_at timestamptz,
   updated_at timestamptz default now()
 );
 
@@ -162,6 +183,7 @@ alter table contacts enable row level security;
 alter table deals enable row level security;
 alter table activities enable row level security;
 alter table subscriptions enable row level security;
+alter table payments enable row level security;
 
 -- On new auth user: provision an organization and link the profile to it.
 -- Idempotent so re-running (or legacy triggers) never create duplicate orgs.

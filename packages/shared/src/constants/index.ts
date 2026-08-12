@@ -51,7 +51,60 @@ export const CLIENT_TYPES = [
   "investor",
 ] as const;
 
-export const SUBSCRIPTION_PLANS = ["free", "starter", "professional", "enterprise"] as const;
+export const SUBSCRIPTION_PLANS = ["free", "starter", "growth", "agency"] as const;
+
+export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
+
+export interface PlanDefinition {
+  id: Exclude<SubscriptionPlan, "free">;
+  name: string;
+  priceInr: number;
+  currency: "INR";
+  highlighted: boolean;
+  features: string[];
+}
+
+export const BILLING_PLANS: PlanDefinition[] = [
+  {
+    id: "starter",
+    name: "Starter",
+    priceInr: 2499,
+    currency: "INR",
+    highlighted: false,
+    features: [
+      "Up to 3 team members",
+      "100 contacts & leads",
+      "Property & deal tracking",
+      "Email support",
+    ],
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    priceInr: 5499,
+    currency: "INR",
+    highlighted: true,
+    features: [
+      "Up to 10 team members",
+      "1,000 contacts & leads",
+      "Advanced reports & pipeline",
+      "Priority support",
+    ],
+  },
+  {
+    id: "agency",
+    name: "Agency",
+    priceInr: 14999,
+    currency: "INR",
+    highlighted: false,
+    features: [
+      "Unlimited team members",
+      "Unlimited contacts & leads",
+      "White-label & API access",
+      "Dedicated account manager",
+    ],
+  },
+];
 
 export const EVENT_TYPES = [
   "showing",
@@ -76,6 +129,7 @@ export const ROUTES = {
     DEALS: "/dashboard/deals",
     CALENDAR: "/dashboard/calendar",
     REPORTS: "/dashboard/reports",
+    BILLING: "/dashboard/billing",
     SETTINGS: "/dashboard/settings",
   },
   ADMIN: {

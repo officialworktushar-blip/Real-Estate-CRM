@@ -12,18 +12,17 @@ import { Card, CardContent, CardHeader } from "@/components/common/Card";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { StatsCardSkeleton } from "@/components/common/Skeleton";
 import { useAdminBilling } from "@/hooks/useAdmin";
-import { formatAmount } from "@/utils/currency";
-import { useCurrencyStore } from "@/stores/currencyStore";
+import { formatInr } from "@/utils/currency";
 
 const paymentStatusConfig: Record<string, { label: string; variant: string; icon: React.ReactNode }> = {
   succeeded: { label: "Paid", variant: "success", icon: <CheckCircle2 className="h-3 w-3" /> },
   failed: { label: "Failed", variant: "danger", icon: <XCircle className="h-3 w-3" /> },
   refunded: { label: "Refunded", variant: "warning", icon: <XCircle className="h-3 w-3" /> },
   pending: { label: "Pending", variant: "default", icon: <XCircle className="h-3 w-3" /> },
+  created: { label: "Created", variant: "default", icon: <XCircle className="h-3 w-3" /> },
 };
 
 export function BillingPage() {
-  const { currency } = useCurrencyStore();
   const { records, revenue, isLoading, error } = useAdminBilling();
 
   const totalRevenue = revenue.reduce((sum, m) => sum + m.total, 0);
@@ -32,8 +31,8 @@ export function BillingPage() {
   const latestMonth = revenue.length > 0 ? revenue[revenue.length - 1] : null;
 
   const billingStats: { title: string; value: string | number; change: string; changeType: "positive" | "negative" | "neutral"; icon: React.ReactNode }[] = [
-    { title: "Total Revenue (YTD)", value: formatAmount(totalRevenue, currency), change: `${revenue.length} months`, changeType: "positive", icon: <DollarSign className="h-6 w-6" /> },
-    { title: "Monthly Revenue", value: latestMonth ? formatAmount(latestMonth.total, currency) : "—", change: "Latest month", changeType: "positive", icon: <TrendingUp className="h-6 w-6" /> },
+    { title: "Total Revenue (YTD)", value: formatInr(totalRevenue), change: `${revenue.length} months`, changeType: "positive", icon: <DollarSign className="h-6 w-6" /> },
+    { title: "Monthly Revenue", value: latestMonth ? formatInr(latestMonth.total) : "—", change: "Latest month", changeType: "positive", icon: <TrendingUp className="h-6 w-6" /> },
     { title: "Successful Payments", value: `${succeededPayments}`, change: `${records.length} total`, changeType: "positive", icon: <CheckCircle2 className="h-6 w-6" /> },
     { title: "Failed Payments", value: `${failedPayments}`, change: "Needs attention", changeType: failedPayments > 0 ? "negative" : "neutral", icon: <XCircle className="h-6 w-6" /> },
   ];
@@ -92,7 +91,7 @@ export function BillingPage() {
                 <div className="flex items-end gap-2 h-48">
                   {revenue.map((m) => (
                     <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-[10px] text-dark-400">{formatAmount(m.total, currency)}</span>
+                      <span className="text-[10px] text-dark-400">{formatInr(m.total)}</span>
                       <div className="w-full bg-gold-500/20 rounded-t-md relative" style={{ height: `${(m.total / maxRevenue) * 140}px` }}>
                         <div className="absolute inset-0 bg-gold-500 rounded-t-md opacity-80 hover:opacity-100 transition-opacity" />
                       </div>
@@ -131,7 +130,7 @@ export function BillingPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-dark-200">Stripe Revenue</span>
-                            <span className="text-sm font-semibold text-gold-400">{formatAmount(stripeTotal, currency)}</span>
+                            <span className="text-sm font-semibold text-gold-400">{formatInr(stripeTotal)}</span>
                           </div>
                           <div className="h-2 bg-dark-700/50 rounded-full overflow-hidden">
                             <div className="h-full rounded-full bg-purple-500 transition-all duration-500" style={{ width: `${(stripeTotal / grandTotal) * 100}%` }} />
@@ -141,7 +140,7 @@ export function BillingPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-dark-200">Razorpay Revenue</span>
-                            <span className="text-sm font-semibold text-gold-400">{formatAmount(razorpayTotal, currency)}</span>
+                            <span className="text-sm font-semibold text-gold-400">{formatInr(razorpayTotal)}</span>
                           </div>
                           <div className="h-2 bg-dark-700/50 rounded-full overflow-hidden">
                             <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${(razorpayTotal / grandTotal) * 100}%` }} />
@@ -172,7 +171,7 @@ export function BillingPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-dark-700">
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider">User</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider">Organization</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden md:table-cell">Provider</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider">Amount</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-400 uppercase tracking-wider hidden lg:table-cell">Date</th>
@@ -205,20 +204,20 @@ export function BillingPage() {
                   <tr key={payment.id} className="hover:bg-dark-700/30 transition-colors">
                     <td className="px-4 py-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-dark-100 truncate">{payment.profiles?.full_name || "Unknown"}</p>
-                        <p className="text-xs text-dark-400 truncate">{payment.profiles?.email || ""}</p>
+                        <p className="text-sm font-medium text-dark-100 truncate">{payment.organizations?.name || "Unknown"}</p>
+                        <p className="text-xs text-dark-400 truncate">{payment.plan ? `${payment.plan} plan` : ""}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <Badge variant={payment.billing_provider === "razorpay" ? "info" : "warning"}>
-                        {payment.billing_provider || "stripe"}
+                        {payment.billing_provider || "razorpay"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-sm font-semibold ${
                         payment.status === "refunded" ? "text-amber-400" : payment.status === "failed" ? "text-red-400" : "text-emerald-400"
                       }`}>
-                        {payment.status === "refunded" ? "-" : ""}{formatAmount(payment.amount, currency)}
+                        {payment.status === "refunded" ? "-" : ""}{formatInr(payment.amount)}
                       </span>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">

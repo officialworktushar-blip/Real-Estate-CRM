@@ -32,7 +32,10 @@ router.post("/razorpay", async (req: Request, res: Response, next: NextFunction)
       return;
     }
 
-    const result = await razorpayService.handleWebhook(req.body, signature);
+    const result = await razorpayService.handleWebhook(
+      req.body as Buffer,
+      signature
+    );
     res.json(result);
   } catch (err) {
     logger.error("Razorpay webhook error:", (err as Error).message);

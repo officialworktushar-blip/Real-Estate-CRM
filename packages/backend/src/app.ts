@@ -20,6 +20,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/webhooks/stripe", express.raw({ type: "application/json" }));
+app.use("/api/webhooks/razorpay", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: "10mb" }));
 
 app.use("/api", routes);

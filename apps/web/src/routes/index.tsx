@@ -51,6 +51,11 @@ const ReportsPage = lazy(() =>
     default: m.ReportsPage,
   }))
 );
+const DashboardBillingPage = lazy(() =>
+  import("@/pages/dashboard/BillingPage").then((m) => ({
+    default: m.BillingPage,
+  }))
+);
 const SettingsPage = lazy(() =>
   import("@/pages/dashboard/SettingsPage").then((m) => ({
     default: m.SettingsPage,
@@ -160,6 +165,14 @@ export function AppRoutes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <ReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="billing"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <DashboardBillingPage />
             </Suspense>
           }
         />

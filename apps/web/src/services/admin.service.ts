@@ -59,14 +59,19 @@ export interface AuditLog {
 
 export interface BillingRecord {
   id: string;
-  user_id: string;
+  org_id: string;
+  user_id?: string;
   amount: number;
   currency: string;
   status: string;
   billing_provider: string;
+  plan?: string;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
   invoice_id?: string;
   created_at: string;
-  profiles?: { full_name: string; email: string };
+  paid_at?: string;
+  organizations?: { name: string };
 }
 
 export interface RevenueData {
