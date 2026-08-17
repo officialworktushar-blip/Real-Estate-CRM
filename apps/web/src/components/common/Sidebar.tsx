@@ -11,9 +11,7 @@ import {
   ChevronLeft,
   Building2,
   X,
-  CreditCard,
   ScrollText,
-  Crown,
   FileText,
 } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
@@ -30,15 +28,12 @@ const navItems = [
   { to: "/dashboard/deals", icon: Handshake, label: "Deals" },
   { to: "/dashboard/calendar", icon: Calendar, label: "Calendar" },
   { to: "/dashboard/reports", icon: BarChart3, label: "Reports" },
-  { to: "/dashboard/billing", icon: CreditCard, label: "Billing & Plans" },
   { to: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
 const adminItems = [
   { to: "/admin", icon: Shield, label: "Admin Dashboard", end: true },
   { to: "/admin/users", icon: Users, label: "Users" },
-  { to: "/admin/subscriptions", icon: Crown, label: "Subscriptions" },
-  { to: "/admin/billing", icon: CreditCard, label: "Billing" },
   { to: "/admin/audit-logs", icon: ScrollText, label: "Audit Logs" },
   { to: "/admin/settings", icon: FileText, label: "System Settings" },
 ];

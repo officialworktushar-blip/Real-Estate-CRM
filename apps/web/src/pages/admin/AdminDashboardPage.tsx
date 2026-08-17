@@ -1,23 +1,20 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/common/Card";
 import { Badge } from "@/components/common/Badge";
-import { useAdminSystem, useAdminSubscriptions } from "@/hooks/useAdmin";
+import { useAdminSystem } from "@/hooks/useAdmin";
 
 export function AdminDashboardPage() {
   const { user, profile } = useAuth();
   const { stats: systemStats, error: systemError } = useAdminSystem();
-  const { stats: subStats, error: subsError } = useAdminSubscriptions();
 
   const role = profile?.role || user?.role || "unknown";
-  const error = systemError || subsError;
 
   const statCards = [
     { label: "Total Users", value: systemStats?.total_users ?? 0 },
     { label: "Properties", value: systemStats?.total_properties ?? 0 },
     { label: "Deals", value: systemStats?.total_deals ?? 0 },
     { label: "Organizations", value: systemStats?.total_organizations ?? 0 },
-    { label: "Active Subscriptions", value: subStats?.active ?? 0 },
-    { label: "MRR", value: subStats?.mrr ?? 0 },
+    { label: "Active Subscriptions", value: systemStats?.active_subscriptions ?? 0 },
   ];
 
   return (
@@ -48,15 +45,15 @@ export function AdminDashboardPage() {
         </CardContent>
       </Card>
 
-      {error && (
+      {systemError && (
         <Card className="border-red-500/30">
           <CardContent className="py-3 text-sm text-red-400">
-            Failed to load admin data: {error}
+            Failed to load admin data: {systemError}
           </CardContent>
         </Card>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {statCards.map((s) => (
           <Card key={s.label}>
             <CardContent className="p-3 text-center">

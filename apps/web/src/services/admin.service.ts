@@ -12,30 +12,6 @@ export interface AdminUser {
   organization?: { name: string };
 }
 
-export interface AdminSubscription {
-  id: string;
-  user_id: string;
-  plan: string;
-  status: string;
-  billing_provider?: string;
-  amount?: number;
-  currency?: string;
-  current_period_start?: string;
-  current_period_end?: string;
-  created_at: string;
-  profiles?: { full_name: string; email: string };
-}
-
-export interface SubscriptionStats {
-  total: number;
-  active: number;
-  cancelled: number;
-  past_due: number;
-  trialing: number;
-  mrr: number;
-  arr: number;
-}
-
 export interface SystemStats {
   total_users: number;
   total_organizations: number;
@@ -55,30 +31,6 @@ export interface AuditLog {
   details?: Record<string, unknown>;
   created_at: string;
   profiles?: { full_name: string; email: string };
-}
-
-export interface BillingRecord {
-  id: string;
-  org_id: string;
-  user_id?: string;
-  amount: number;
-  currency: string;
-  status: string;
-  billing_provider: string;
-  plan?: string;
-  razorpay_order_id?: string;
-  razorpay_payment_id?: string;
-  invoice_id?: string;
-  created_at: string;
-  paid_at?: string;
-  organizations?: { name: string };
-}
-
-export interface RevenueData {
-  month: string;
-  stripe: number;
-  razorpay: number;
-  total: number;
 }
 
 const ADMIN_CACHE_TTL_MS = 15_000;
@@ -112,34 +64,6 @@ export const adminService = {
     },
   },
 
-  subscriptions: {
-    async list(params?: { page?: number; limit?: number }) {
-      const searchParams = new URLSearchParams();
-      if (params?.page) searchParams.set("page", String(params.page));
-      if (params?.limit) searchParams.set("limit", String(params.limit));
-      return api.getCached<PaginatedResponse<AdminSubscription>>(
-        `/admin/subscriptions?${searchParams}`,
-        ADMIN_CACHE_TTL_MS
-      );
-    },
-
-    async update(id: string, data: { status?: string }) {
-      const result = await api.put<{ data: AdminSubscription; message: string }>(
-        `/admin/subscriptions/${id}`,
-        data
-      );
-      api.clearGetCache("/admin/subscriptions");
-      return result;
-    },
-
-    async stats() {
-      return api.getCached<{ data: SubscriptionStats }>(
-        "/admin/subscriptions/stats",
-        ADMIN_CACHE_TTL_MS
-      );
-    },
-  },
-
   system: {
     async health() {
       return api.get<{ data: Record<string, unknown> }>("/admin/system/health");
@@ -158,29 +82,6 @@ export const adminService = {
       if (params?.limit) searchParams.set("limit", String(params.limit));
       return api.getCached<PaginatedResponse<AuditLog>>(
         `/admin/system/audit-logs?${searchParams}`,
-        ADMIN_CACHE_TTL_MS
-      );
-    },
-  },
-
-  billing: {
-    async list(params?: { page?: number; limit?: number }) {
-      const searchParams = new URLSearchParams();
-      if (params?.page) searchParams.set("page", String(params.page));
-      if (params?.limit) searchParams.set("limit", String(params.limit));
-      return api.getCached<PaginatedResponse<BillingRecord>>(
-        `/admin/billing?${searchParams}`,
-        ADMIN_CACHE_TTL_MS
-      );
-    },
-
-    async revenue(params?: { start?: string; end?: string }) {
-      const searchParams = new URLSearchParams();
-      if (params?.start) searchParams.set("start", params.start);
-      if (params?.end) searchParams.set("end", params.end);
-      const qs = searchParams.toString();
-      return api.getCached<{ data: RevenueData[] }>(
-        `/admin/billing/revenue${qs ? `?${qs}` : ""}`,
         ADMIN_CACHE_TTL_MS
       );
     },

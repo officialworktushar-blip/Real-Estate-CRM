@@ -56,11 +56,6 @@ const ReportsPage = lazy(() =>
     default: m.ReportsPage,
   }))
 );
-const DashboardBillingPage = lazy(() =>
-  import("@/pages/dashboard/BillingPage").then((m) => ({
-    default: m.BillingPage,
-  }))
-);
 const SettingsPage = lazy(() =>
   import("@/pages/dashboard/SettingsPage").then((m) => ({
     default: m.SettingsPage,
@@ -75,11 +70,6 @@ const AdminDashboardPage = lazy(() =>
 const UsersPage = lazy(() =>
   import("@/pages/admin/UsersPage").then((m) => ({ default: m.UsersPage }))
 );
-const SubscriptionsPage = lazy(() =>
-  import("@/pages/admin/SubscriptionsPage").then((m) => ({
-    default: m.SubscriptionsPage,
-  }))
-);
 const SystemSettingsPage = lazy(() =>
   import("@/pages/admin/SystemSettingsPage").then((m) => ({
     default: m.SystemSettingsPage,
@@ -89,9 +79,6 @@ const AuditLogsPage = lazy(() =>
   import("@/pages/admin/AuditLogsPage").then((m) => ({
     default: m.AuditLogsPage,
   }))
-);
-const BillingPage = lazy(() =>
-  import("@/pages/admin/BillingPage").then((m) => ({ default: m.BillingPage }))
 );
 
 export function AppRoutes() {
@@ -183,14 +170,6 @@ export function AppRoutes() {
           }
         />
         <Route
-          path="billing"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <DashboardBillingPage />
-            </Suspense>
-          }
-        />
-        <Route
           path="settings"
           element={
             <Suspense fallback={<PageLoader />}>
@@ -221,22 +200,6 @@ export function AppRoutes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <UsersPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="subscriptions"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <SubscriptionsPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="billing"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <BillingPage />
             </Suspense>
           }
         />

@@ -13,17 +13,36 @@ const GUEST_USER: User = {
   is_guest: true,
 };
 
+const AUTH_SAFETY_TIMEOUT_MS = 6_000;
+const PROFILE_FETCH_TIMEOUT_MS = 8_000;
+const ENSURE_ORG_TIMEOUT_MS = 5_000;
+
 interface ProfileFetchResult {
   profile: Profile | null;
   error: Error | null;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 async function fetchProfile(userId: string): Promise<ProfileFetchResult> {
-  const { data, error } = await supabase
+  const query = supabase
     .from("profiles")
     .select("*")
     .eq("id", userId)
     .maybeSingle();
+
+  const { data, error } = await withTimeout(
+    Promise.resolve(query),
+    PROFILE_FETCH_TIMEOUT_MS,
+    "fetchProfile"
+  );
 
   if (error) {
     console.error("[useAuth] Failed to fetch profile:", error.message);
@@ -74,9 +93,11 @@ export function useAuth() {
   useEffect(() => {
     if (!isLoading && !isProfileLoading) return;
     const timeout = setTimeout(() => {
-      if (useAuthStore.getState().isLoading) setLoading(false);
-      if (useAuthStore.getState().isProfileLoading) setProfileLoading(false);
-    }, 15000);
+      const state = useAuthStore.getState();
+      if (state.isLoading) setLoading(false);
+      if (state.isProfileLoading) setProfileLoading(false);
+      console.warn("[useAuth] Safety timeout fired — forcing loading state to false");
+    }, AUTH_SAFETY_TIMEOUT_MS);
     return () => clearTimeout(timeout);
   }, [isLoading, isProfileLoading, setLoading, setProfileLoading]);
 
@@ -86,37 +107,45 @@ export function useAuth() {
       setProfileLoading(true);
 
       try {
-        const result = await fetchProfile(supabaseUser.id);
+        let result: ProfileFetchResult;
+        try {
+          result = await fetchProfile(supabaseUser.id);
+        } catch (e: any) {
+          console.warn("[useAuth] fetchProfile failed/timed out:", e?.message || e);
+          result = { profile: null, error: e instanceof Error ? e : new Error(String(e)) };
+        }
 
         if (seq !== loadSeqRef.current) {
           return;
         }
 
-        // New signups / OAuth accounts may lack a linked org (or a profile row
-        // entirely) if provisioning lagged behind the auth event. Ask the
-        // backend to create an organization and link the profile, then re-fetch.
         let profile = result.error ? null : result.profile;
         if (!profile || !profile.org_id) {
           if (!result.error) {
             try {
-              await api.post("/auth/ensure-org", {
-                full_name: supabaseUser.user_metadata?.full_name,
-              });
+              await withTimeout(
+                api.post("/auth/ensure-org", {
+                  full_name: supabaseUser.user_metadata?.full_name,
+                }),
+                ENSURE_ORG_TIMEOUT_MS,
+                "ensure-org"
+              );
             } catch (e: any) {
-              console.warn("[useAuth] ensure-org failed:", e?.message || e);
+              console.warn("[useAuth] ensure-org failed/timed out:", e?.message || e);
             }
           }
           if (seq !== loadSeqRef.current) return;
-          const refreshed = await fetchProfile(supabaseUser.id);
-          if (seq !== loadSeqRef.current) return;
-          if (!refreshed.error && refreshed.profile) {
-            profile = refreshed.profile;
+          try {
+            const refreshed = await fetchProfile(supabaseUser.id);
+            if (seq !== loadSeqRef.current) return;
+            if (!refreshed.error && refreshed.profile) {
+              profile = refreshed.profile;
+            }
+          } catch (e: any) {
+            console.warn("[useAuth] Second fetchProfile failed/timed out:", e?.message || e);
           }
         }
 
-        // Always set the user from the session, even when the profile is
-        // missing or failed to load, so guards/navigation never hang on a
-        // stale null user.
         setProfile(profile);
         const mapped = mapSupabaseUser(supabaseUser, profile);
         console.log(

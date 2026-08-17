@@ -4,7 +4,6 @@ import {
   Globe,
   Mail,
   Shield,
-  CreditCard,
   Database,
   Bell,
   Key,
@@ -20,12 +19,11 @@ import { Input } from "@/components/common/Input";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
 
-type SettingsTab = "general" | "security" | "billing" | "notifications" | "integrations";
+type SettingsTab = "general" | "security" | "notifications" | "integrations";
 
 const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "general", label: "General", icon: <Globe className="h-4 w-4" /> },
   { id: "security", label: "Security", icon: <Shield className="h-4 w-4" /> },
-  { id: "billing", label: "Billing", icon: <CreditCard className="h-4 w-4" /> },
   { id: "notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
   { id: "integrations", label: "Integrations", icon: <Webhook className="h-4 w-4" /> },
 ];
@@ -51,17 +49,6 @@ export function SystemSettingsPage() {
     maxLoginAttempts: 5,
     passwordMinLength: 8,
     allowOAuth: true,
-  });
-
-  const [billing, setBilling] = useState({
-    stripeEnabled: true,
-    stripePublishableKey: "pk_live_••••••••••••••••",
-    stripeSecretKey: "sk_live_••••••••••••••••",
-    razorpayEnabled: true,
-    razorpayKeyId: "rzp_live_••••••••••••••••",
-    razorpayKeySecret: "••••••••••••••••",
-    autoRetryFailed: true,
-    invoicePrefix: "INV-",
   });
 
   const [notifications, setNotifications] = useState({
@@ -209,95 +196,6 @@ export function SystemSettingsPage() {
             </Card>
           )}
 
-          {activeTab === "billing" && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-dark-100">Stripe Configuration</h3>
-                    <Badge variant={billing.stripeEnabled ? "success" : "danger"}>{billing.stripeEnabled ? "Enabled" : "Disabled"}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input label="Publishable Key" value={billing.stripePublishableKey} readOnly className="font-mono text-xs" />
-                  <Input label="Secret Key" type="password" value={billing.stripeSecretKey} readOnly className="font-mono text-xs" />
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="text-sm font-medium text-dark-100">Enable Stripe</p>
-                      <p className="text-xs text-dark-400">Accept payments via Stripe</p>
-                    </div>
-                    <button
-                      onClick={() => setBilling({ ...billing, stripeEnabled: !billing.stripeEnabled })}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        billing.stripeEnabled ? "bg-gold-500" : "bg-dark-600"
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        billing.stripeEnabled ? "translate-x-6" : "translate-x-1"
-                      }`} />
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-dark-100">Razorpay Configuration</h3>
-                    <Badge variant={billing.razorpayEnabled ? "success" : "danger"}>{billing.razorpayEnabled ? "Enabled" : "Disabled"}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input label="Key ID" value={billing.razorpayKeyId} readOnly className="font-mono text-xs" />
-                  <Input label="Key Secret" type="password" value={billing.razorpayKeySecret} readOnly className="font-mono text-xs" />
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="text-sm font-medium text-dark-100">Enable Razorpay</p>
-                      <p className="text-xs text-dark-400">Accept payments via Razorpay (India)</p>
-                    </div>
-                    <button
-                      onClick={() => setBilling({ ...billing, razorpayEnabled: !billing.razorpayEnabled })}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        billing.razorpayEnabled ? "bg-gold-500" : "bg-dark-600"
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        billing.razorpayEnabled ? "translate-x-6" : "translate-x-1"
-                      }`} />
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <h3 className="font-semibold text-dark-100">Invoice Settings</h3>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Invoice Prefix" value={billing.invoicePrefix} onChange={(e) => setBilling({ ...billing, invoicePrefix: e.target.value })} />
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="text-sm font-medium text-dark-100">Auto-Retry Failed Payments</p>
-                      <p className="text-xs text-dark-400">Automatically retry failed payments after 3 days</p>
-                    </div>
-                    <button
-                      onClick={() => setBilling({ ...billing, autoRetryFailed: !billing.autoRetryFailed })}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        billing.autoRetryFailed ? "bg-gold-500" : "bg-dark-600"
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        billing.autoRetryFailed ? "translate-x-6" : "translate-x-1"
-                      }`} />
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
           {activeTab === "notifications" && (
             <Card>
               <CardHeader>
@@ -354,8 +252,6 @@ export function SystemSettingsPage() {
                   <div className="space-y-2">
                     {[
                       { name: "Supabase", status: "connected" },
-                      { name: "Stripe", status: "connected" },
-                      { name: "Razorpay", status: "connected" },
                       { name: "SendGrid", status: "connected" },
                       { name: "Google Maps", status: "error" },
                     ].map((service) => (

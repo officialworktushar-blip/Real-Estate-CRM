@@ -48,17 +48,3 @@ export function formatAmount(amountUSD: number, currency: CurrencyCode): string 
 export function getCurrencySymbol(currency: CurrencyCode): string {
   return (currencies[currency] ?? currencies.USD).symbol;
 }
-
-/**
- * Formats an amount already expressed in Indian Rupees. Billing is INR-only
- * for now (Razorpay), so plan and payment amounts bypass the USD conversion.
- */
-export function formatInr(amount: number): string {
-  const value =
-    typeof amount === "number" && Number.isFinite(amount) ? amount : 0;
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}

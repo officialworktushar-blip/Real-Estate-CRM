@@ -45,19 +45,8 @@ class AdminPageBoundary extends Component<{ children: ReactNode }, BoundaryState
 }
 
 export function AdminLayout() {
-  const { user, isLoading, isProfileLoading } = useAuth();
+  const { user } = useAuth();
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
-
-  if (isLoading || isProfileLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-dark-950">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-red-500 border-t-transparent" />
-          <p className="text-sm text-dark-400 animate-pulse">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (!user) return <Navigate to="/auth/login" replace />;
   if (user.role !== "super_admin") return <Navigate to="/dashboard" replace />;

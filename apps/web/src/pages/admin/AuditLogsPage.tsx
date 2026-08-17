@@ -6,10 +6,8 @@ import {
   UserX,
   UserCheck,
   Settings,
-  CreditCard,
   Trash2,
   LogIn,
-  LogOut,
   Key,
   Database,
   AlertTriangle,
@@ -20,16 +18,14 @@ import { Input } from "@/components/common/Input";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
 
-type LogAction = "user_created" | "user_suspended" | "user_activated" | "admin_login" | "subscription_changed" | "settings_updated" | "payment_failed" | "data_export" | "role_changed" | "user_deleted";
+type LogAction = "user_created" | "user_suspended" | "user_activated" | "admin_login" | "settings_updated" | "data_export" | "role_changed" | "user_deleted";
 
 const actionConfig: Record<LogAction, { label: string; icon: React.ReactNode; color: string }> = {
   user_created: { label: "User Created", icon: <UserPlus className="h-4 w-4" />, color: "text-emerald-400" },
   user_suspended: { label: "User Suspended", icon: <UserX className="h-4 w-4" />, color: "text-red-400" },
   user_activated: { label: "User Activated", icon: <UserCheck className="h-4 w-4" />, color: "text-emerald-400" },
   admin_login: { label: "Admin Login", icon: <LogIn className="h-4 w-4" />, color: "text-brand-400" },
-  subscription_changed: { label: "Subscription Changed", icon: <CreditCard className="h-4 w-4" />, color: "text-amber-400" },
   settings_updated: { label: "Settings Updated", icon: <Settings className="h-4 w-4" />, color: "text-purple-400" },
-  payment_failed: { label: "Payment Failed", icon: <AlertTriangle className="h-4 w-4" />, color: "text-red-400" },
   data_export: { label: "Data Export", icon: <Database className="h-4 w-4" />, color: "text-blue-400" },
   role_changed: { label: "Role Changed", icon: <Key className="h-4 w-4" />, color: "text-gold-400" },
   user_deleted: { label: "User Deleted", icon: <Trash2 className="h-4 w-4" />, color: "text-red-400" },
@@ -37,20 +33,15 @@ const actionConfig: Record<LogAction, { label: string; icon: React.ReactNode; co
 
 const dummyLogs = [
   { id: "1", action: "admin_login" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Logged in from 192.168.1.1", timestamp: "2026-07-26T14:30:00", severity: "info" },
-  { id: "2", action: "user_suspended" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Suspended user Aisha Khan (aisha@estate.pk) - Payment overdue", timestamp: "2026-07-26T13:15:00", severity: "warning" },
-  { id: "3", action: "subscription_changed" as LogAction, user: "System", email: "", detail: "Chen Wei upgraded from Professional to Enterprise", timestamp: "2026-07-26T11:00:00", severity: "info" },
-  { id: "4", action: "user_created" as LogAction, user: "System", email: "", detail: "New user registered: Emma Wilson (emma@prop.co)", timestamp: "2026-07-26T10:45:00", severity: "info" },
-  { id: "5", action: "payment_failed" as LogAction, user: "System", email: "", detail: "Payment failed for Aisha Khan - Invoice INV-2026-004", timestamp: "2026-07-25T09:00:00", severity: "error" },
-  { id: "6", action: "settings_updated" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Updated platform email templates", timestamp: "2026-07-25T16:30:00", severity: "info" },
-  { id: "7", action: "user_activated" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Activated user Marcus Johnson", timestamp: "2026-07-25T14:00:00", severity: "info" },
-  { id: "8", action: "data_export" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Exported user data CSV (1,284 records)", timestamp: "2026-07-25T11:20:00", severity: "info" },
-  { id: "9", action: "role_changed" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Changed role for David Lee: User → Super Admin", timestamp: "2026-07-24T15:00:00", severity: "warning" },
-  { id: "10", action: "subscription_changed" as LogAction, user: "System", email: "", detail: "Maria Rodriguez cancelled Professional subscription", timestamp: "2026-07-24T12:00:00", severity: "warning" },
-  { id: "11", action: "admin_login" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Logged in from 10.0.0.5", timestamp: "2026-07-24T09:00:00", severity: "info" },
-  { id: "12", action: "user_deleted" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Deleted inactive user account (test@test.com)", timestamp: "2026-07-23T16:45:00", severity: "error" },
-  { id: "13", action: "user_created" as LogAction, user: "System", email: "", detail: "New user registered: Tom Chen (tom@homes.com)", timestamp: "2026-07-23T10:30:00", severity: "info" },
-  { id: "14", action: "settings_updated" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Updated Stripe webhook endpoint", timestamp: "2026-07-22T14:00:00", severity: "info" },
-  { id: "15", action: "payment_failed" as LogAction, user: "System", email: "", detail: "Retry payment failed for Nina Petrova - Invoice INV-2026-007", timestamp: "2026-07-22T09:00:00", severity: "error" },
+  { id: "2", action: "user_suspended" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Suspended user Aisha Khan (aisha@estate.pk)", timestamp: "2026-07-26T13:15:00", severity: "warning" },
+  { id: "3", action: "user_created" as LogAction, user: "System", email: "", detail: "New user registered: Emma Wilson (emma@prop.co)", timestamp: "2026-07-26T10:45:00", severity: "info" },
+  { id: "4", action: "settings_updated" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Updated platform email templates", timestamp: "2026-07-25T16:30:00", severity: "info" },
+  { id: "5", action: "user_activated" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Activated user Marcus Johnson", timestamp: "2026-07-25T14:00:00", severity: "info" },
+  { id: "6", action: "data_export" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Exported user data CSV (1,284 records)", timestamp: "2026-07-25T11:20:00", severity: "info" },
+  { id: "7", action: "role_changed" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Changed role for David Lee: User → Super Admin", timestamp: "2026-07-24T15:00:00", severity: "warning" },
+  { id: "8", action: "admin_login" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Logged in from 10.0.0.5", timestamp: "2026-07-24T09:00:00", severity: "info" },
+  { id: "9", action: "user_deleted" as LogAction, user: "Raj Patel", email: "raj@build.in", detail: "Deleted inactive user account (test@test.com)", timestamp: "2026-07-23T16:45:00", severity: "error" },
+  { id: "10", action: "user_created" as LogAction, user: "System", email: "", detail: "New user registered: Tom Chen (tom@homes.com)", timestamp: "2026-07-23T10:30:00", severity: "info" },
 ];
 
 const severityConfig: Record<string, { variant: string }> = {

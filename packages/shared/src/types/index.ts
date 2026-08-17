@@ -17,17 +17,6 @@ export interface CalendarEvent {
   updated_at: string;
 }
 
-export interface Subscription {
-  id: string;
-  org_id: string;
-  plan: "free" | "starter" | "professional" | "enterprise";
-  status: "active" | "trialing" | "past_due" | "canceled";
-  current_period_start: string;
-  current_period_end: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface AuditLog {
   id: string;
   org_id?: string;

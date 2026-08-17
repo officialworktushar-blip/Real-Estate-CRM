@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import {
   User,
   Bell,
@@ -16,14 +15,11 @@ import {
   EyeOff,
   Trash2,
   LogOut,
-  Crown,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
 import { Badge } from "@/components/common/Badge";
-import { useBilling } from "@/hooks/useBilling";
-import { formatInr } from "@/utils/currency";
 
 type SettingsTab = "profile" | "notifications" | "security" | "account";
 
@@ -38,9 +34,6 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
-  const { subscription, isLoading: billingLoading } = useBilling();
-
-  const subscriptionActive = subscription?.status === "active" || subscription?.status === "trialing";
 
   const [profile, setProfile] = useState({
     firstName: "Alex",
@@ -320,50 +313,6 @@ export function SettingsPage() {
 
           {activeTab === "account" && (
             <>
-              <Card>
-                <CardHeader>
-                  <h3 className="font-semibold text-dark-100">Subscription</h3>
-                </CardHeader>
-                <CardContent>
-                  {billingLoading ? (
-                    <div className="animate-pulse space-y-3">
-                      <div className="h-5 bg-dark-700 rounded w-40" />
-                      <div className="h-3 bg-dark-700 rounded w-56" />
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between p-4 bg-dark-700/30 rounded-lg">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Crown className="h-4 w-4 text-gold-400" />
-                          <p className="text-sm font-semibold text-dark-100 capitalize">
-                            {subscription?.plan && subscription.plan !== "free"
-                              ? `${subscription.plan} Plan`
-                              : "Free Plan"}
-                          </p>
-                          <Badge variant={subscriptionActive ? "success" : "warning"}>
-                            {subscriptionActive ? "Active" : subscription?.status || "No plan"}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-dark-400 mt-1">
-                          {subscription?.amount
-                            ? `${formatInr(subscription.amount)}/month`
-                            : "Billed in INR via Razorpay"}
-                          {subscription?.current_period_end &&
-                            ` · Renews ${new Date(subscription.current_period_end).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}`}
-                        </p>
-                      </div>
-                      <Link to="/dashboard/billing">
-                        <Button variant="secondary" size="sm">Manage</Button>
-                      </Link>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
               <Card>
                 <CardHeader>
                   <h3 className="font-semibold text-dark-100">Danger Zone</h3>
