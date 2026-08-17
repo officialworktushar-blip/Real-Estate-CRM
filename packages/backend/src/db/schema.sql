@@ -6,7 +6,6 @@ create table if not exists organizations (
   name text not null,
   slug text unique not null,
   logo_url text,
-  owner_id uuid references auth.users(id) on delete set null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -208,17 +207,15 @@ begin
     split_part(coalesce(new.email, 'user_' || new.id::text), '@', 1)
   );
 
-  insert into public.organizations (name, slug, owner_id)
+  insert into public.organizations (name, slug)
   values (
     org_name,
-    lower(regexp_replace(org_name, '[^a-z0-9]+', '-', 'g')) || '-' || substr(gen_random_uuid()::text, 1, 8),
-    new.id
+    lower(regexp_replace(org_name, '[^a-z0-9]+', '-', 'g')) || '-' || substr(gen_random_uuid()::text, 1, 8)
   )
   returning id into new_org_id;
 
-  insert into public.profiles (id, user_id, full_name, email, org_id)
+  insert into public.profiles (id, full_name, email, org_id)
   values (
-    new.id,
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
     new.email,

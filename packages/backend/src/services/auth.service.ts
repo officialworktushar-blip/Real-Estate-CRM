@@ -24,6 +24,8 @@ async function ensureOrgAndProfile(
   userId: string,
   opts: { full_name?: string; email?: string; company?: string } = {}
 ) {
+  // Look up by profiles.id (which IS the auth user UUID — no separate
+  // user_id column exists in this table).
   const { data: existing, error: fetchError } = await supabaseAdmin
     .from("profiles")
     .select("*")
@@ -43,29 +45,40 @@ async function ensureOrgAndProfile(
     .insert({
       name: orgName,
       slug: `${slugify(orgName)}-${randomSuffix()}`,
-      owner_id: userId,
     })
     .select()
     .single();
 
   if (orgError) throw createAppError(orgError.message, 500, "ORG_CREATE_FAILED");
 
+  // If a profile already exists, just link it to the new org.
+  if (existing) {
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({ org_id: org.id })
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (profileError) throw createAppError(profileError.message, 400, "PROFILE_UPDATE_FAILED");
+    return { org_id: org.id, organization: org, profile };
+  }
+
+  // No profile row yet — insert one. The profiles.id column IS the auth user
+  // UUID (no separate user_id column exists).
   const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
-    .upsert(
-      {
-        id: userId,
-        full_name: opts.full_name || existing?.full_name || "",
-        email: opts.email || existing?.email || null,
-        org_id: org.id,
-        role: existing?.role || "user",
-      },
-      { onConflict: "id" }
-    )
+    .insert({
+      id: userId,
+      full_name: opts.full_name || "",
+      email: opts.email || null,
+      org_id: org.id,
+      role: "user",
+    })
     .select()
     .single();
 
-  if (profileError) throw createAppError(profileError.message, 400, "PROFILE_UPDATE_FAILED");
+  if (profileError) throw createAppError(profileError.message, 400, "PROFILE_CREATE_FAILED");
 
   return { org_id: org.id, organization: org, profile };
 }

@@ -9,6 +9,41 @@ export interface AuthRequest extends Request {
   organizationId?: string;
 }
 
+/**
+ * Auto-provision an organization for a non-super-admin user whose profile
+ * lacks an org_id.  This is the "belt" that ensures every normal user always
+ * has a linked org before any controller runs — so controllers never have to
+ * deal with the NO_ORGANIZATION case for regular users.
+ *
+ * Super admins are intentionally allowed to have no org (they access the
+ * Admin Panel which operates across all orgs).
+ */
+async function autoProvisionOrgIfNeeded(
+  userId: string,
+  userRole: string,
+  fullName?: string,
+  email?: string
+): Promise<string | undefined> {
+  if (userRole === "super_admin") return undefined;
+
+  // Lazily import to avoid circular dependencies at module-load time.
+  const { authService } = await import("../services/auth.service");
+
+  try {
+    const result = await authService.ensureOrg(userId, fullName);
+    logger.info(
+      `[auth] Auto-provisioned org ${result.org_id} for user ${userId}`
+    );
+    return result.org_id;
+  } catch (err) {
+    logger.error(
+      `[auth] Auto-provision org FAILED for user ${userId}:`,
+      err
+    );
+    return undefined;
+  }
+}
+
 export async function auth(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
@@ -42,6 +77,19 @@ export async function auth(req: AuthRequest, _res: Response, next: NextFunction)
     req.userId = data.user.id;
     req.userRole = profile?.role || "user";
     req.organizationId = profile?.org_id;
+
+    // If a non-admin user has no linked org, provision one automatically.
+    if (!req.organizationId && req.userRole !== "super_admin") {
+      const provisionedOrgId = await autoProvisionOrgIfNeeded(
+        req.userId!,
+        req.userRole || "user",
+        data.user.user_metadata?.full_name,
+        data.user.email
+      );
+      if (provisionedOrgId) {
+        req.organizationId = provisionedOrgId;
+      }
+    }
 
     logger.debug(
       `[auth] User ${req.userId} verified with role "${req.userRole}" (org ${req.organizationId || "none"})`

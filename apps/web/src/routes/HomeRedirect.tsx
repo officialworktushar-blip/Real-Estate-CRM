@@ -7,7 +7,10 @@ export function HomeRedirect() {
   if (isLoading || isProfileLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gold-500 border-t-transparent" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gold-500 border-t-transparent" />
+          <p className="text-xs text-dark-500">Loading…</p>
+        </div>
       </div>
     );
   }

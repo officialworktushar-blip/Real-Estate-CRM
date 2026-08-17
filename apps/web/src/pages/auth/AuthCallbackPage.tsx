@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,106 +11,86 @@ export function AuthCallbackPage() {
   const { user, isLoading, isProfileLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [ready, setReady] = useState(false);
 
-  // Recover the OAuth session: the supabase client already processes the
-  // return automatically during initialization (implicit hash tokens, or a
-  // PKCE code). Only fall back to a manual code exchange if no session landed.
+  // Step 1: On mount, ensure the OAuth session is recovered.
+  // The Supabase client processes hash tokens / PKCE code automatically
+  // during initialization. This is a safety net for edge cases.
   useEffect(() => {
     let active = true;
 
-    const finish = () => {
-      if (active) setReady(true);
-    };
-
-    // Fail-safe: never leave the user stuck on the "Completing sign in..."
-    // screen forever (requirement: loading state must always resolve).
-    const timeout = setTimeout(finish, 10000);
-
     const recover = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Check if session already exists (normal case after redirect).
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         console.log(
-          "[OAuth] Session after redirect:",
-          session ? `present (user=${session.user.id})` : "NULL"
+          "[OAuth Callback] getSession →",
+          session ? `user=${session.user.email}` : "null"
         );
 
-        if (session) return;
+        if (session) return; // Session is ready — onAuthStateChange will apply it.
 
+        // Rare: Supabase client didn't auto-exchange. Try manual PKCE exchange.
         const code = searchParams.get("code");
         if (code) {
-          console.log("[OAuth] No session yet, exchanging code for session...");
-          const { data, error } = await supabase.auth.exchangeCodeForSession(
-            code
-          );
+          console.log("[OAuth Callback] Exchanging PKCE code for session…");
+          const { data, error } =
+            await supabase.auth.exchangeCodeForSession(code);
           if (error) {
-            console.error("[OAuth] Code exchange failed:", error.message);
+            console.error("[OAuth Callback] Code exchange failed:", error.message);
           } else if (data.session) {
-            console.log(
-              "[OAuth] Session after code exchange:",
-              `present (user=${data.session.user.id})`
-            );
+            console.log("[OAuth Callback] Code exchange succeeded:", data.session.user.email);
           }
         }
       } catch (err) {
-        console.error("[OAuth] Callback recovery error:", err);
-      } finally {
-        clearTimeout(timeout);
-        finish();
+        console.error("[OAuth Callback] Recovery error:", err);
       }
     };
 
     recover();
-
     return () => {
       active = false;
-      clearTimeout(timeout);
     };
   }, [searchParams]);
 
-  // Once the session is fully available (user + profile loaded), redirect by
-  // role. If there is genuinely no session, send the user to login.
+  // Step 2: Once session + profile are loaded, redirect by role.
+  // If genuinely no session, send to login.
   useEffect(() => {
-    if (!ready || isLoading || isProfileLoading) return;
+    // Wait until loading is fully resolved.
+    if (isLoading || isProfileLoading) return;
 
     if (user) {
-      const destination =
-        user.role === "super_admin" ? "/admin" : "/dashboard";
-      console.log(
-        `[OAuth] Final redirect decision: ${destination} (role=${user.role})`
-      );
-      navigate(destination, { replace: true });
+      const dest = user.role === "super_admin" ? "/admin" : "/dashboard";
+      console.log("[OAuth Callback] Redirect →", dest, "(role=" + user.role + ")");
+      navigate(dest, { replace: true });
       return;
     }
 
+    // No user in store — check if a session actually exists but profile
+    // hasn't loaded yet (rare timing issue). If so, wait for it.
     let active = true;
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!active) return;
       if (session?.user) {
-        // A session exists but the store is empty (rare). Re-run the auth
-        // bootstrap via HomeRedirect instead of bouncing back to login.
-        console.log(
-          "[OAuth] Session exists but store empty — re-initializing to apply user."
-        );
+        console.log("[OAuth Callback] Session exists but user=null → re-init via /");
         navigate("/", { replace: true });
         return;
       }
-      console.log("[OAuth] Final redirect decision: /auth/login (no session)");
-      navigate(`/auth/login?message=${LOGIN_FAILURE_MESSAGE}`, {
-        replace: true,
-      });
+      console.log("[OAuth Callback] No session → redirect to login");
+      navigate(`/auth/login?message=${LOGIN_FAILURE_MESSAGE}`, { replace: true });
     });
     return () => {
       active = false;
     };
-  }, [ready, user, isLoading, isProfileLoading, navigate]);
+  }, [user, isLoading, isProfileLoading, navigate]);
 
   return (
     <div className="flex h-screen items-center justify-center bg-dark-950">
       <div className="flex flex-col items-center gap-4">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-gold-500 border-t-transparent" />
         <p className="text-sm text-dark-400 animate-pulse">
-          Completing sign in...
+          Completing sign in…
         </p>
       </div>
     </div>

@@ -1,8 +1,8 @@
--- 001_org_provisioning.sql
--- Run against the DEPLOYED Supabase database (SQL editor) to:
---   replace handle_new_user so signups provision an organization + linked profile
--- Idempotent: safe to run more than once.
+-- 001_org_provisioning equivalent as a proper Supabase migration.
+-- Replaces the handle_new_user trigger so that signups automatically
+-- provision an organization and link the profile.
 
+-- 1. Replace the trigger function to auto-provision org + profile.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -13,6 +13,7 @@ declare
   org_name text;
   new_org_id uuid;
 begin
+  -- If the profile already has an org, do nothing.
   if exists (select 1 from public.profiles where id = new.id and org_id is not null) then
     return new;
   end if;
@@ -45,6 +46,7 @@ begin
 end;
 $$;
 
+-- 3. Re-create the trigger (drop + create to handle name differences).
 drop trigger if exists on_auth_user_created on auth.users;
 drop trigger if exists handle_new_user on auth.users;
 create trigger on_auth_user_created

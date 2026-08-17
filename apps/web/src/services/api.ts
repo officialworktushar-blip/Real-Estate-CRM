@@ -39,6 +39,7 @@ export function apiErrorMessage(err: unknown, fallback: string): string {
 
 class ApiClient {
   private baseUrl: string;
+  private noOrgRetried = new Set<string>();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -94,6 +95,51 @@ class ApiClient {
       const error = await response
         .json()
         .catch(() => ({ message: "Request failed" }));
+
+      // ── 403 NO_ORGANIZATION recovery ──────────────────────────────────
+      // If the user has no linked org, call ensure-org once and retry.
+      // This is the frontend "suspender" — the backend auth middleware is
+      // the primary belt that auto-provisions orgs.
+      if (
+        response.status === 403 &&
+        error.code === "NO_ORGANIZATION" &&
+        !this.noOrgRetried.has(endpoint)
+      ) {
+        this.noOrgRetried.add(endpoint);
+        console.warn(
+          "[API] 403 NO_ORGANIZATION on",
+          endpoint,
+          "— calling ensure-org then retrying once"
+        );
+        try {
+          await this.post("/auth/ensure-org");
+
+          // Refresh the user in the auth store so withOrgScope picks up
+          // the new org_id for subsequent requests.
+          const { user: currentUser } = useAuthStore.getState();
+          if (currentUser && !currentUser.org_id) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("org_id")
+                .eq("id", session.user.id)
+                .maybeSingle();
+              if (profile?.org_id) {
+                useAuthStore
+                  .getState()
+                  .setUser({ ...currentUser, org_id: profile.org_id });
+              }
+            }
+          }
+
+          // Retry the request with a fresh token (org may have changed).
+          return this.performRequest<T>(endpoint, options, cacheTtlMs);
+        } catch (retryErr) {
+          console.error("[API] ensure-org + retry failed:", retryErr);
+        }
+      }
+
       throw new ApiError(
         error.message || `HTTP ${response.status}`,
         error.code,

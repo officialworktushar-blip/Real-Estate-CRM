@@ -32,7 +32,9 @@ export function LoginPage() {
     try {
       await login(email, password);
       const role = useAuthStore.getState().user?.role;
-      navigate(role === "super_admin" ? "/admin" : "/dashboard");
+      const dest = role === "super_admin" ? "/admin" : "/dashboard";
+      console.log("[Login] Email login → navigating to", dest);
+      navigate(dest);
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -44,7 +46,9 @@ export function LoginPage() {
     setError("");
     setGoogleLoading(true);
     try {
+      console.log("[Login] Starting Google OAuth…");
       await loginWithGoogle();
+      // Redirect happens via Supabase → /auth/callback. Nothing else to do here.
     } catch (err) {
       setError(friendlyError(err));
       setGoogleLoading(false);
@@ -52,6 +56,7 @@ export function LoginPage() {
   };
 
   const handleGuest = () => {
+    console.log("[Login] Guest login → navigating to /dashboard");
     loginAsGuest();
     navigate("/dashboard");
   };
@@ -74,7 +79,7 @@ export function LoginPage() {
           {googleLoading ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-dark-300 border-t-transparent" />
-              Connecting...
+              Connecting…
             </span>
           ) : (
             <>
@@ -127,7 +132,7 @@ export function LoginPage() {
           />
           {error && <p className="text-sm text-red-400">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Signing in…" : "Sign In"}
           </Button>
         </form>
 
