@@ -54,7 +54,7 @@ export const reportsService = {
   async revenue(orgId: string | null, _range: DateRange) {
     let query = supabaseAdmin
       .from("deals")
-      .select("value, created_at, actual_close_date")
+      .select("value, created_at, expected_close_date")
       .eq("stage", "closed_won");
     if (orgId) query = query.eq("org_id", orgId);
 
@@ -63,7 +63,7 @@ export const reportsService = {
 
     const months: Record<string, number> = {};
     for (const deal of data || []) {
-      const date = new Date(deal.actual_close_date || deal.created_at);
+      const date = new Date(deal.expected_close_date || deal.created_at);
       if (Number.isNaN(date.getTime())) continue;
       const month = date.toISOString().slice(0, 7);
       months[month] = (months[month] || 0) + (Number(deal.value) || 0);

@@ -9,7 +9,6 @@ export const createDealSchema = z.object({
     .default("lead"),
   value: z.number().min(0, "Value cannot be negative").default(0),
   expected_close_date: z.string().optional(),
-  actual_close_date: z.string().optional(),
   notes: z.string().optional(),
   assigned_to: z.string().uuid().optional(),
 });

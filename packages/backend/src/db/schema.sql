@@ -18,7 +18,7 @@ create table if not exists profiles (
   email text,
   full_name text,
   avatar_url text,
-  role text default 'user' check (role in ('user', 'super_admin')),
+  role text default 'user' check (role in ('user', 'owner', 'super_admin')),
   phone text,
   company text,
   license_number text,
@@ -214,15 +214,18 @@ begin
   )
   returning id into new_org_id;
 
-  insert into public.profiles (id, full_name, email, org_id)
+  insert into public.profiles (id, full_name, email, org_id, role)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
     new.email,
-    new_org_id
+    new_org_id,
+    'owner'
   )
   on conflict (id) do update
-    set org_id = excluded.org_id, email = excluded.email;
+    set org_id = excluded.org_id,
+        email  = excluded.email,
+        role   = case when profiles.role in ('user', 'member') then 'owner' else profiles.role end;
 
   return new;
 end;

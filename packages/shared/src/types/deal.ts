@@ -15,7 +15,6 @@ export interface Deal {
   stage: DealStage;
   value: number;
   expected_close_date?: string;
-  actual_close_date?: string;
   notes?: string;
   assigned_to?: string;
   created_at: string;

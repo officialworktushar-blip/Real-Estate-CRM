@@ -68,8 +68,8 @@ function mapSupabaseUser(
   profile: Profile | null = null
 ): User {
   const role: User["role"] =
-    profile && (profile.role === "super_admin" || profile.role === "user")
-      ? profile.role
+    profile && (profile.role === "super_admin" || profile.role === "owner" || profile.role === "user")
+      ? (profile.role as User["role"])
       : "user";
 
   return {

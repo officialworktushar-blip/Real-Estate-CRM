@@ -19,13 +19,22 @@ function randomSuffix(): string {
  * Idempotently provisions an organization and links it to the given user's
  * profile. The DB trigger normally does this on signup; this is a safe fallback
  * for OAuth sign-ins and for users created before the trigger shipped.
+ *
+ * Schema note — profiles table:
+ *   - primary key is "id" (the auth user UUID)
+ *   - has org_id (FK → organizations.id)
+ *   - has role with CHECK IN ('user', 'owner', 'super_admin')
+ *
+ * organizations table:
+ *   - has id, name, slug, … — NO owner_id column.
+ *
+ * After this function returns, org_id is guaranteed non-NULL for every
+ * non-super-admin user.
  */
 async function ensureOrgAndProfile(
   userId: string,
   opts: { full_name?: string; email?: string; company?: string } = {}
 ) {
-  // Look up by profiles.id (which IS the auth user UUID — no separate
-  // user_id column exists in this table).
   const { data: existing, error: fetchError } = await supabaseAdmin
     .from("profiles")
     .select("*")
@@ -51,11 +60,16 @@ async function ensureOrgAndProfile(
 
   if (orgError) throw createAppError(orgError.message, 500, "ORG_CREATE_FAILED");
 
-  // If a profile already exists, just link it to the new org.
   if (existing) {
+    const needsRolePromo =
+      existing.role === "user" || existing.role === "member";
+
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .update({ org_id: org.id })
+      .update({
+        org_id: org.id,
+        ...(needsRolePromo ? { role: "owner" } : {}),
+      })
       .eq("id", userId)
       .select()
       .single();
@@ -64,8 +78,6 @@ async function ensureOrgAndProfile(
     return { org_id: org.id, organization: org, profile };
   }
 
-  // No profile row yet — insert one. The profiles.id column IS the auth user
-  // UUID (no separate user_id column exists).
   const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
     .insert({
@@ -73,7 +85,7 @@ async function ensureOrgAndProfile(
       full_name: opts.full_name || "",
       email: opts.email || null,
       org_id: org.id,
-      role: "user",
+      role: "owner",
     })
     .select()
     .single();

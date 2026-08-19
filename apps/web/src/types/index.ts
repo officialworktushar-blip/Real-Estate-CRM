@@ -3,7 +3,7 @@ export interface User {
   email: string;
   full_name: string;
   avatar_url?: string;
-  role: "user" | "super_admin";
+  role: "user" | "owner" | "super_admin";
   org_id?: string;
   is_guest?: boolean;
 }
@@ -105,7 +105,6 @@ export interface Deal {
   stage: string;
   value: number;
   expected_close_date?: string;
-  actual_close_date?: string;
   notes?: string;
   assigned_to?: string;
   created_at: string;

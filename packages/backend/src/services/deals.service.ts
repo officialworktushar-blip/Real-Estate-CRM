@@ -89,6 +89,7 @@ function toDealsPayload(payload: Record<string, unknown>): Record<string, unknow
   const row: Record<string, unknown> = { ...payload };
   delete row.commission_amount;
   delete row.clients;
+  delete row.actual_close_date;
   if ("client_id" in row && !("lead_id" in row)) row.lead_id = row.client_id;
   delete row.client_id;
   return row;
