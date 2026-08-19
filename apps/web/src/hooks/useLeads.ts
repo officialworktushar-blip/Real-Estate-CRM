@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { leadsService } from "@/services/leads.service";
 import { apiErrorMessage } from "@/services/api";
 import { toast } from "@/stores/toastStore";
@@ -15,22 +15,32 @@ export function useLeads() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const fetchLeads = useCallback(async (pageNum = 1, searchQuery = search) => {
+  const mountedRef = useRef(true);
+  const fetchIdRef = useRef(0);
+
+  const fetchLeads = useCallback(async (pageNum: number, searchQuery: string) => {
+    const fetchId = ++fetchIdRef.current;
     setIsLoading(true);
     setError(null);
     try {
       const res = await leadsService.list({ page: pageNum, limit: 20, search: searchQuery });
+      if (!mountedRef.current || fetchIdRef.current !== fetchId) return;
       setLeads(res.data);
       setMeta(res.meta);
     } catch (err) {
+      if (!mountedRef.current || fetchIdRef.current !== fetchId) return;
       setError(apiErrorMessage(err, "Failed to fetch leads"));
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current && fetchIdRef.current === fetchId) {
+        setIsLoading(false);
+      }
     }
-  }, [search]);
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchLeads(page, search);
+    return () => { mountedRef.current = false; };
   }, [page, search, fetchLeads]);
 
   const refetch = useCallback(() => fetchLeads(page, search), [fetchLeads, page, search]);

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Users,
   Home,
@@ -25,6 +26,8 @@ import { useReports } from "@/hooks/useReports";
 import { formatAmount } from "@/utils/currency";
 import { useCurrencyStore } from "@/stores/currencyStore";
 
+const LOADING_TIMEOUT_MS = 8_000;
+
 export function DashboardPage() {
   const { currency, toggleCurrency } = useCurrencyStore();
   const { leads, isLoading: leadsLoading } = useLeads();
@@ -32,12 +35,19 @@ export function DashboardPage() {
   const { events, isLoading: calendarLoading } = useCalendar();
   const { pipeline, performance, isLoading: reportsLoading } = useReports();
 
+  const [forceLoaded, setForceLoaded] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setForceLoaded(true), LOADING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
   const safePipeline = pipeline ?? [];
   const safeLeads = leads ?? [];
   const safeProperties = properties ?? [];
   const safeEvents = events ?? [];
 
-  const isLoading = leadsLoading || propertiesLoading || calendarLoading || reportsLoading;
+  const isLoading = !forceLoaded && (leadsLoading || propertiesLoading || calendarLoading || reportsLoading);
 
   const totalDeals = safePipeline.reduce((sum, s) => sum + (s.count || 0), 0);
   const pipelineValue = safePipeline.reduce((sum, s) => sum + (s.value || 0), 0);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { propertiesService } from "@/services/properties.service";
 import { apiErrorMessage } from "@/services/api";
 import { toast } from "@/stores/toastStore";
@@ -15,22 +15,32 @@ export function useProperties() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const fetchProperties = useCallback(async (pageNum = 1, searchQuery = search) => {
+  const mountedRef = useRef(true);
+  const fetchIdRef = useRef(0);
+
+  const fetchProperties = useCallback(async (pageNum: number, searchQuery: string) => {
+    const fetchId = ++fetchIdRef.current;
     setIsLoading(true);
     setError(null);
     try {
       const res = await propertiesService.list({ page: pageNum, limit: 20, search: searchQuery });
+      if (!mountedRef.current || fetchIdRef.current !== fetchId) return;
       setProperties(res.data);
       setMeta(res.meta);
     } catch (err) {
+      if (!mountedRef.current || fetchIdRef.current !== fetchId) return;
       setError(apiErrorMessage(err, "Failed to fetch properties"));
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current && fetchIdRef.current === fetchId) {
+        setIsLoading(false);
+      }
     }
-  }, [search]);
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchProperties(page, search);
+    return () => { mountedRef.current = false; };
   }, [page, search, fetchProperties]);
 
   const refetch = useCallback(() => fetchProperties(page, search), [fetchProperties, page, search]);

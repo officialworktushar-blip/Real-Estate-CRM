@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { reportsService } from "@/services/reports.service";
 import type { PipelineStage, PerformanceData, RevenueData } from "@/services/reports.service";
 
@@ -9,7 +9,11 @@ export function useReports() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const mountedRef = useRef(true);
+  const fetchIdRef = useRef(0);
+
   const fetchAll = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
     setIsLoading(true);
     setError(null);
     try {
@@ -18,6 +22,8 @@ export function useReports() {
         reportsService.performance(),
         reportsService.revenue(),
       ]);
+
+      if (!mountedRef.current || fetchIdRef.current !== fetchId) return;
 
       if (pipelineRes.status === "fulfilled") setPipeline(pipelineRes.value.data);
       if (performanceRes.status === "fulfilled") setPerformance(performanceRes.value.data);
@@ -31,14 +37,19 @@ export function useReports() {
         setError(errors.filter(Boolean).join("; "));
       }
     } catch (err) {
+      if (!mountedRef.current || fetchIdRef.current !== fetchId) return;
       setError(err instanceof Error ? err.message : "Failed to fetch reports");
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current && fetchIdRef.current === fetchId) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchAll();
+    return () => { mountedRef.current = false; };
   }, [fetchAll]);
 
   return {
