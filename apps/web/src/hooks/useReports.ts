@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { reportsService } from "@/services/reports.service";
 import type { PipelineStage, PerformanceData, RevenueData } from "@/services/reports.service";
 
+const HOOK_SAFETY_TIMEOUT_MS = 5_000;
+
 export function useReports() {
   const [pipeline, setPipeline] = useState<PipelineStage[]>([]);
   const [performance, setPerformance] = useState<PerformanceData | null>(null);
@@ -51,6 +53,11 @@ export function useReports() {
     fetchAll();
     return () => { mountedRef.current = false; };
   }, [fetchAll]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { setIsLoading(false); }, HOOK_SAFETY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   return {
     pipeline,

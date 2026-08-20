@@ -26,7 +26,7 @@ import { useReports } from "@/hooks/useReports";
 import { formatAmount } from "@/utils/currency";
 import { useCurrencyStore } from "@/stores/currencyStore";
 
-const LOADING_TIMEOUT_MS = 8_000;
+const LOADING_TIMEOUT_MS = 5_000;
 
 export function DashboardPage() {
   const { currency, toggleCurrency } = useCurrencyStore();

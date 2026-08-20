@@ -13,7 +13,7 @@ const GUEST_USER: User = {
   is_guest: true,
 };
 
-const SAFETY_TIMEOUT_MS = 7_000;
+const SAFETY_TIMEOUT_MS = 5_000;
 const PROFILE_FETCH_TIMEOUT_MS = 8_000;
 const ENSURE_ORG_TIMEOUT_MS = 10_000;
 
@@ -110,12 +110,16 @@ export function useAuth() {
     return () => clearTimeout(id);
   }, [isLoading, isProfileLoading, setLoading, setProfileLoading]);
 
-  // ── applyUser: fetch profile + ensure org, then set user in store. ───
+  // ── applyUser: set user immediately, then fetch profile + ensure org. ─
   const applyUser = useCallback(
     async (supabaseUser: any) => {
       const seq = ++loadSeqRef.current;
       setProfileLoading(true);
-      console.log("[Auth] applyUser started for:", supabaseUser.email);
+
+      // Set user immediately so ProtectedRoute can render children right away.
+      // Profile data (including org_id) will be merged in once the fetch completes.
+      const initialUser = mapSupabaseUser(supabaseUser, null);
+      setUser(initialUser);
 
       try {
         let result: ProfileFetchResult;
@@ -250,8 +254,11 @@ export function useAuth() {
       }
 
       if (session?.user) {
-        // SIGNED_IN / TOKEN_REFRESHED — apply user and clear loading.
-        applyUser(session.user);
+        // Only re-run applyUser for actual sign-in or user updates —
+        // TOKEN_REFRESHED just rotates the JWT, no profile change needed.
+        if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+          applyUser(session.user);
+        }
         setLoading(false);
       } else if (event === "SIGNED_OUT" || (!useGuestStore.getState().isGuest && !session)) {
         setUser(null);

@@ -5,6 +5,8 @@ import { toast } from "@/stores/toastStore";
 import type { CreateLeadData } from "@/services/leads.service";
 import type { Lead, PaginatedResponse } from "@/types";
 
+const HOOK_SAFETY_TIMEOUT_MS = 5_000;
+
 export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, total_pages: 0 });
@@ -42,6 +44,11 @@ export function useLeads() {
     fetchLeads(page, search);
     return () => { mountedRef.current = false; };
   }, [page, search, fetchLeads]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { setIsLoading(false); }, HOOK_SAFETY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   const refetch = useCallback(() => fetchLeads(page, search), [fetchLeads, page, search]);
 

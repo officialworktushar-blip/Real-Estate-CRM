@@ -8,8 +8,14 @@ interface AdminRouteProps {
 export function AdminRoute({ children }: AdminRouteProps) {
   const { user, isLoading, isProfileLoading } = useAuth();
 
+  if (user) {
+    if (user.role !== "super_admin") {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <>{children}</>;
+  }
+
   if (isLoading || isProfileLoading) {
-    console.log("[AdminRoute] Loading — isLoading:", isLoading, "isProfileLoading:", isProfileLoading);
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -20,15 +26,5 @@ export function AdminRoute({ children }: AdminRouteProps) {
     );
   }
 
-  if (!user) {
-    console.log("[AdminRoute] No user → redirect to /auth/login");
-    return <Navigate to="/auth/login" replace />;
-  }
-
-  if (user.role !== "super_admin") {
-    console.log("[AdminRoute] Not admin (role=" + user.role + ") → redirect to /dashboard");
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
+  return <Navigate to="/auth/login" replace />;
 }

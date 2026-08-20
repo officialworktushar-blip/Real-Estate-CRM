@@ -5,6 +5,8 @@ import { toast } from "@/stores/toastStore";
 import type { CreatePropertyData } from "@/services/properties.service";
 import type { Property, PaginatedResponse } from "@/types";
 
+const HOOK_SAFETY_TIMEOUT_MS = 5_000;
+
 export function useProperties() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, total_pages: 0 });
@@ -42,6 +44,11 @@ export function useProperties() {
     fetchProperties(page, search);
     return () => { mountedRef.current = false; };
   }, [page, search, fetchProperties]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { setIsLoading(false); }, HOOK_SAFETY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   const refetch = useCallback(() => fetchProperties(page, search), [fetchProperties, page, search]);
 

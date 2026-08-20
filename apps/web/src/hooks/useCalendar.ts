@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { calendarService } from "@/services/calendar.service";
 import type { CalendarEvent } from "@/types";
 
+const HOOK_SAFETY_TIMEOUT_MS = 5_000;
+
 export function useCalendar(start?: string, end?: string) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +38,11 @@ export function useCalendar(start?: string, end?: string) {
     fetchEvents(start, end);
     return () => { mountedRef.current = false; };
   }, [start, end, fetchEvents]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { setIsLoading(false); }, HOOK_SAFETY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   const refetch = useCallback(() => fetchEvents(start, end), [fetchEvents, start, end]);
 

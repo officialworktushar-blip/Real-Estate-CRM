@@ -8,8 +8,11 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading, isProfileLoading } = useAuth();
 
+  if (user) {
+    return <>{children}</>;
+  }
+
   if (isLoading || isProfileLoading) {
-    console.log("[ProtectedRoute] Loading — isLoading:", isLoading, "isProfileLoading:", isProfileLoading);
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -20,10 +23,5 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!user) {
-    console.log("[ProtectedRoute] No user → redirect to /auth/login");
-    return <Navigate to="/auth/login" replace />;
-  }
-
-  return <>{children}</>;
+  return <Navigate to="/auth/login" replace />;
 }
