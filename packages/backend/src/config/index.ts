@@ -1,7 +1,22 @@
+function parseCorsOrigins(raw?: string): string[] {
+  const fromEnv = (raw ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  return Array.from(
+    new Set([
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "https://real-estate-crm-web-alpha.vercel.app",
+      ...fromEnv,
+    ])
+  );
+}
+
 export const config = {
   port: parseInt(process.env.PORT || "4000", 10),
   nodeEnv: process.env.NODE_ENV || "development",
-  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  corsOrigins: parseCorsOrigins(process.env.CORS_ORIGIN),
   jwtSecret: process.env.JWT_SECRET || "dev-secret-change-me",
   supabase: {
     url: process.env.SUPABASE_URL || "",

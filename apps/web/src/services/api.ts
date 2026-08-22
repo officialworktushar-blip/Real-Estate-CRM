@@ -1,7 +1,13 @@
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+function resolveApiBaseUrl(): string {
+  const raw = import.meta.env.VITE_API_URL || "http://localhost:4000";
+  const trimmed = raw.trim().replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+}
+
+const API_URL = resolveApiBaseUrl();
 
 interface CacheEntry {
   data: unknown;

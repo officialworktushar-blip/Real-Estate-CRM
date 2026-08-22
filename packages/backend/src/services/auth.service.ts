@@ -1,3 +1,4 @@
+import { config } from "../config";
 import { supabaseAdmin } from "../config/supabase";
 import { createAppError } from "../middleware/errorHandler";
 import { emailService } from "./email.service";
@@ -155,7 +156,7 @@ export const authService = {
 
   async forgotPassword(email: string) {
     const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${process.env.CORS_ORIGIN}/auth/reset-password`,
+      redirectTo: `${config.frontend.url}/auth/reset-password`,
     });
     if (error) throw createAppError(error.message, 400, "RESET_FAILED");
   },

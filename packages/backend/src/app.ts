@@ -9,8 +9,24 @@ import routes from "./routes";
 
 const app = express();
 
+const allowedOrigins = new Set(config.corsOrigins);
+const vercelWildcard = /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/;
+
 app.use(helmet());
-app.use(cors({ origin: config.corsOrigin, credentials: true }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin) || vercelWildcard.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 app.use(morgan("dev"));
 app.use(rateLimiter);
 app.use("/api/admin", adminRateLimiter);
