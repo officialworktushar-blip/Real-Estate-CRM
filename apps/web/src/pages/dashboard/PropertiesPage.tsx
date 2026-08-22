@@ -208,7 +208,7 @@ export function PropertiesPage() {
                   <h3 className="text-sm font-semibold text-dark-100 truncate">{prop.title}</h3>
                   <div className="flex items-center gap-1 text-dark-400">
                     <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="text-xs truncate">{prop.city}, {prop.state} {prop.zip_code}</span>
+                    <span className="text-xs truncate">{prop.city}, {prop.state} {prop.pincode}</span>
                   </div>
                   <div className="flex items-center gap-4 pt-2 border-t border-dark-700/50">
                     <div className="flex items-center gap-1">
@@ -221,7 +221,7 @@ export function PropertiesPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Square className="h-3.5 w-3.5 text-dark-500" />
-                      <span className="text-xs text-dark-300">{(prop.square_feet || 0).toLocaleString()} sqft</span>
+                      <span className="text-xs text-dark-300">{(prop.area_sqft || 0).toLocaleString()} sqft</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-1 pt-2 border-t border-dark-700/50">
@@ -301,7 +301,7 @@ export function PropertiesPage() {
                           <span className="text-sm text-dark-300">{prop.bedrooms || 0} / {prop.bathrooms || 0}</span>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <span className="text-sm text-dark-300">{(prop.square_feet || 0).toLocaleString()}</span>
+                          <span className="text-sm text-dark-300">{(prop.area_sqft || 0).toLocaleString()}</span>
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-sm font-semibold text-gold-400">{formatAmount(prop.price, currency)}</span>

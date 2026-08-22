@@ -96,7 +96,7 @@ export const calendarService = {
   async update(id: string, payload: Record<string, unknown>, orgId: string | null) {
     let query = supabaseAdmin
       .from(ACTIVITIES_TABLE)
-      .update({ ...toActivityPayload(payload), updated_at: new Date().toISOString() })
+      .update(toActivityPayload(payload))
       .eq("id", id);
     if (orgId) query = query.eq("org_id", orgId);
 

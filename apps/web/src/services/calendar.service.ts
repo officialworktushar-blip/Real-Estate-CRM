@@ -6,7 +6,7 @@ interface CalendarListParams {
   end?: string;
 }
 
-interface CreateEventData {
+export interface CreateEventData {
   title: string;
   description?: string;
   event_type: string;

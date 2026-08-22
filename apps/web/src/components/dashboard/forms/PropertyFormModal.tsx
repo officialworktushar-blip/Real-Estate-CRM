@@ -40,17 +40,14 @@ interface FormState {
   address: string;
   city: string;
   state: string;
-  zip_code: string;
+  pincode: string;
   country: string;
   property_type: string;
   status: string;
   price: string;
   bedrooms: string;
   bathrooms: string;
-  square_feet: string;
-  lot_size: string;
-  year_built: string;
-  mls_number: string;
+  area_sqft: string;
 }
 
 const emptyState: FormState = {
@@ -59,17 +56,14 @@ const emptyState: FormState = {
   address: "",
   city: "",
   state: "",
-  zip_code: "",
+  pincode: "",
   country: "US",
   property_type: "house",
   status: "available",
   price: "",
   bedrooms: "",
   bathrooms: "",
-  square_feet: "",
-  lot_size: "",
-  year_built: "",
-  mls_number: "",
+  area_sqft: "",
 };
 
 export function PropertyFormModal({
@@ -93,17 +87,14 @@ export function PropertyFormModal({
               address: initialData.address || "",
               city: initialData.city || "",
               state: initialData.state || "",
-              zip_code: initialData.zip_code || "",
+              pincode: initialData.pincode || "",
               country: initialData.country || "US",
               property_type: initialData.property_type || "house",
               status: initialData.status || "available",
               price: initialData.price != null ? String(initialData.price) : "",
               bedrooms: initialData.bedrooms != null ? String(initialData.bedrooms) : "",
               bathrooms: initialData.bathrooms != null ? String(initialData.bathrooms) : "",
-              square_feet: initialData.square_feet != null ? String(initialData.square_feet) : "",
-              lot_size: initialData.lot_size != null ? String(initialData.lot_size) : "",
-              year_built: initialData.year_built != null ? String(initialData.year_built) : "",
-              mls_number: initialData.mls_number || "",
+              area_sqft: initialData.area_sqft != null ? String(initialData.area_sqft) : "",
             }
           : emptyState
       );
@@ -123,7 +114,7 @@ export function PropertyFormModal({
     if (!form.address.trim()) nextErrors.address = "Address is required";
     if (!form.city.trim()) nextErrors.city = "City is required";
     if (!form.state.trim()) nextErrors.state = "State is required";
-    if (!form.zip_code.trim()) nextErrors.zip_code = "ZIP code is required";
+    if (!form.pincode.trim()) nextErrors.pincode = "Pincode is required";
     const price = form.price.trim() ? Number(form.price) : Number.NaN;
     if (!form.price.trim() || Number.isNaN(price) || price <= 0) {
       nextErrors.price = "Price is required";
@@ -137,17 +128,14 @@ export function PropertyFormModal({
       address: form.address.trim(),
       city: form.city.trim(),
       state: form.state.trim(),
-      zip_code: form.zip_code.trim(),
+      pincode: form.pincode.trim(),
       country: form.country.trim() || "US",
       property_type: form.property_type || "house",
       status: form.status || "available",
       price,
       bedrooms: form.bedrooms.trim() ? Number(form.bedrooms) : undefined,
       bathrooms: form.bathrooms.trim() ? Number(form.bathrooms) : undefined,
-      square_feet: form.square_feet.trim() ? Number(form.square_feet) : undefined,
-      lot_size: form.lot_size.trim() ? Number(form.lot_size) : undefined,
-      year_built: form.year_built.trim() ? Number(form.year_built) : undefined,
-      mls_number: form.mls_number.trim() || undefined,
+      area_sqft: form.area_sqft.trim() ? Number(form.area_sqft) : undefined,
     };
 
     const ok = await onSubmit(payload);
@@ -201,10 +189,10 @@ export function PropertyFormModal({
             required
           />
           <Input
-            label="ZIP"
-            value={form.zip_code}
-            onChange={(e) => set("zip_code", e.target.value)}
-            error={errors.zip_code}
+            label="Pincode"
+            value={form.pincode}
+            onChange={(e) => set("pincode", e.target.value)}
+            error={errors.pincode}
             required
           />
           <Input
@@ -239,7 +227,7 @@ export function PropertyFormModal({
             required
           />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <Input
             label="Bedrooms"
             type="number"
@@ -259,39 +247,13 @@ export function PropertyFormModal({
             placeholder="2.5"
           />
           <Input
-            label="Sqft"
+            label="Area (sq ft)"
             type="number"
             min={0}
             step="any"
-            value={form.square_feet}
-            onChange={(e) => set("square_feet", e.target.value)}
+            value={form.area_sqft}
+            onChange={(e) => set("area_sqft", e.target.value)}
             placeholder="2100"
-          />
-          <Input
-            label="Lot size"
-            type="number"
-            min={0}
-            step="any"
-            value={form.lot_size}
-            onChange={(e) => set("lot_size", e.target.value)}
-            placeholder="0.25"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Year built"
-            type="number"
-            min={1800}
-            step={1}
-            value={form.year_built}
-            onChange={(e) => set("year_built", e.target.value)}
-            placeholder="2015"
-          />
-          <Input
-            label="MLS number"
-            value={form.mls_number}
-            onChange={(e) => set("mls_number", e.target.value)}
-            placeholder="MLS-12345"
           />
         </div>
         {submitError && (

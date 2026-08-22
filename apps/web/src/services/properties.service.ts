@@ -17,17 +17,14 @@ export interface CreatePropertyData {
   address: string;
   city: string;
   state: string;
-  zip_code: string;
   country?: string;
+  pincode: string;
   property_type: string;
   status?: string;
   price: number;
   bedrooms?: number;
   bathrooms?: number;
-  square_feet?: number;
-  lot_size?: number;
-  year_built?: number;
-  mls_number?: string;
+  area_sqft?: number;
   features?: string[];
 }
 

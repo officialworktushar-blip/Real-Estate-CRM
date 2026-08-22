@@ -52,21 +52,19 @@ export interface Property {
   description?: string;
   address: string;
   city: string;
-  state: string;
-  zip_code: string;
+  state?: string;
   country?: string;
+  pincode?: string;
   property_type: string;
   status: string;
   price: number;
+  currency?: string;
   bedrooms?: number;
   bathrooms?: number;
-  square_feet?: number;
-  lot_size?: number;
-  year_built?: number;
-  mls_number?: string;
+  area_sqft?: number;
   images?: string[];
   features?: string[];
-  listed_by?: string;
+  created_by?: string;
   created_at: string;
   updated_at?: string;
 }

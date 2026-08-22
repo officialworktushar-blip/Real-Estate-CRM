@@ -11,6 +11,7 @@ import { Button } from "@/components/common/Button";
 import { Badge } from "@/components/common/Badge";
 import { Card, CardContent, CardHeader } from "@/components/common/Card";
 import { useCalendar } from "@/hooks/useCalendar";
+import { EventFormModal } from "@/components/dashboard/forms/EventFormModal";
 
 type EventType = "viewing" | "meeting" | "open_house" | "closing" | "follow_up" | "inspection";
 
@@ -47,7 +48,8 @@ export function CalendarPage() {
 
   const startDate = formatDateStr(currentYear, currentMonth, 1);
   const endDate = formatDateStr(currentYear, currentMonth, getDaysInMonth(currentYear, currentMonth));
-  const { events, isLoading } = useCalendar(startDate, endDate);
+  const { events, isLoading, createEvent, isSubmitting, submitError } = useCalendar(startDate, endDate);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
@@ -113,7 +115,7 @@ export function CalendarPage() {
           <h1 className="text-2xl font-bold text-dark-100">Calendar</h1>
           <p className="text-sm text-dark-400 mt-1">Schedule and manage your appointments</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsEventModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Event
         </Button>
@@ -233,7 +235,9 @@ export function CalendarPage() {
                       <div className="mt-2 space-y-1">
                         <div className="flex items-center gap-2">
                           <Clock className="h-3 w-3 text-dark-500" />
-                          <span className="text-xs text-dark-300">{startTime} - {endTime}</span>
+                          <span className="text-xs text-dark-300">
+                            {startTime === endTime ? startTime : `${startTime} - ${endTime}`}
+                          </span>
                         </div>
                         {evt.location && (
                           <div className="flex items-center gap-2">
@@ -277,6 +281,15 @@ export function CalendarPage() {
           </Card>
         </div>
       </div>
+
+      <EventFormModal
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        onSubmit={createEvent}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+        initialDate={selectedDate ?? undefined}
+      />
     </div>
   );
 }
