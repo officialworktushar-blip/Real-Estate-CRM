@@ -27,7 +27,7 @@ async function autoProvisionOrgIfNeeded(
   if (userRole === "super_admin") return undefined;
 
   // Lazily import to avoid circular dependencies at module-load time.
-  const { authService } = await import("../services/auth.service");
+  const { authService } = await import("../services/auth.service.js");
 
   try {
     const result = await authService.ensureOrg(userId, fullName);
